@@ -1,0 +1,81 @@
+package com.circuitflip.flipledger.presentation.screens.sale
+
+import com.circuitflip.flipledger.core.onSuccess
+import com.circuitflip.flipledger.domain.model.Device
+import com.circuitflip.flipledger.domain.model.SaleDraft
+import com.circuitflip.flipledger.domain.model.SalesChannel
+import com.circuitflip.flipledger.domain.repository.InventoryRepository
+import com.circuitflip.flipledger.domain.usecase.CompleteSaleUseCase
+import com.circuitflip.flipledger.domain.util.ProfitCalculator
+import com.circuitflip.flipledger.presentation.BaseViewModel
+import com.circuitflip.flipledger.presentation.WizardStore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+
+data class SaleUiState(
+    val device: Device? = null,
+    val draft: SaleDraft = SaleDraft(),
+    val previewNetProfitCents: Long = 0,
+    val previewMargin: Double = 0.0,
+    val completed: Boolean = false,
+)
+
+/** Drives the 3-step Sale flow + live profit preview + completion. */
+class SaleViewModel(
+    private val store: WizardStore,
+    private val inventoryRepository: InventoryRepository,
+    private val completeSale: CompleteSaleUseCase,
+) : BaseViewModel() {
+
+    private val _state = MutableStateFlow(SaleUiState())
+    val state = _state.asStateFlow()
+
+    fun start() {
+        store.resetSaleDraft()
+        combine(
+            inventoryRepositoryDeviceFlow(),
+            store.saleDraft,
+        ) { device, draft ->
+            SaleUiState(
+                device = device,
+                draft = draft,
+                previewNetProfitCents = device?.let { ProfitCalculator.previewNetProfitCents(it, draft) } ?: 0,
+                previewMargin = device?.let { ProfitCalculator.previewMargin(it, draft) } ?: 0.0,
+                completed = _state.value.completed,
+            )
+        }.onEach { _state.value = it }.launchIn(scope)
+    }
+
+    private fun inventoryRepositoryDeviceFlow() =
+        inventoryRepository.observeDevice(store.selectedDeviceId ?: "")
+
+    fun setPrice(v: String) = store.updateSale { it.copy(price = v.filter { c -> c.isDigit() || c == '.' }) }
+    fun setDate(v: String) = store.updateSale { it.copy(date = v) }
+    fun setChannel(c: SalesChannel) = store.updateSale { it.copy(channel = c) }
+    fun setPlatformFee(v: String) = store.updateSale { it.copy(platformFee = money(v)) }
+    fun setPaymentFee(v: String) = store.updateSale { it.copy(paymentFee = money(v)) }
+    fun setShipping(v: String) = store.updateSale { it.copy(shipping = money(v)) }
+    fun setPackaging(v: String) = store.updateSale { it.copy(packaging = money(v)) }
+    fun setOtherFee(v: String) = store.updateSale { it.copy(otherFee = money(v)) }
+    private fun money(v: String) = v.filter { it.isDigit() || it == '.' }
+
+    private val _submitting = MutableStateFlow(false)
+    val submitting = _submitting.asStateFlow()
+
+    fun complete() {
+        val device = _state.value.device ?: return
+        if (_submitting.value) return
+        _submitting.value = true
+        scope.launch {
+            completeSale(device, store.saleDraft.value).onSuccess { sale ->
+                store.lastSale = sale
+                _state.value = _state.value.copy(completed = true)
+            }
+            _submitting.value = false
+        }
+    }
+}
