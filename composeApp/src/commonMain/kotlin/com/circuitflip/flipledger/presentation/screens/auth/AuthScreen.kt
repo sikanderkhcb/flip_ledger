@@ -92,17 +92,50 @@ fun AuthScreen(signUp: Boolean, onBack: () -> Unit, onAuthenticated: () -> Unit,
             }
 
             if (signUp) {
-                FlipTextField(state.draft.name, vm::onName, "Full name", placeholder = "Jordan Rivera")
+                FlipTextField(
+                    state.draft.name,
+                    vm::onName,
+                    "Full name",
+                    placeholder = "Jordan Rivera",
+                    error = state.fieldErrors["name"],
+                )
                 Spacer(Modifier.height(16.dp))
             }
-            FlipTextField(state.draft.email, vm::onEmail, "Email", placeholder = "you@business.com", keyboardType = KeyboardType.Email, error = fieldError(state.error, "email"))
+            FlipTextField(
+                state.draft.email,
+                vm::onEmail,
+                "Email",
+                placeholder = "you@business.com",
+                keyboardType = KeyboardType.Email,
+                error = state.fieldErrors["email"],
+            )
             Spacer(Modifier.height(16.dp))
-            FlipTextField(state.draft.password, vm::onPassword, "Password", placeholder = "At least 8 characters", isPassword = true, error = fieldError(state.error, "password"))
+            FlipTextField(
+                state.draft.password,
+                vm::onPassword,
+                "Password",
+                placeholder = "At least 8 characters",
+                isPassword = true,
+                error = state.fieldErrors["password"],
+            )
             if (signUp) {
                 Spacer(Modifier.height(16.dp))
-                FlipTextField(state.draft.phone, vm::onPhone, "Phone", placeholder = "(555) 123-4567", keyboardType = KeyboardType.Phone)
+                FlipTextField(
+                    state.draft.phone,
+                    vm::onPhone,
+                    "Phone",
+                    placeholder = "(555) 123-4567",
+                    keyboardType = KeyboardType.Phone,
+                    error = state.fieldErrors["phone"],
+                )
                 Spacer(Modifier.height(16.dp))
-                FlipTextField(state.draft.businessName, vm::onBusinessName, "Business name (if any)", placeholder = "e.g. Circuit Flip Co.")
+                FlipTextField(
+                    state.draft.businessName,
+                    vm::onBusinessName,
+                    "Business name (if any)",
+                    placeholder = "e.g. Circuit Flip Co.",
+                    error = state.fieldErrors["businessName"],
+                )
             }
             state.error?.let {
                 Spacer(Modifier.height(12.dp))
@@ -120,6 +153,3 @@ fun AuthScreen(signUp: Boolean, onBack: () -> Unit, onAuthenticated: () -> Unit,
         }
     }
 }
-
-private fun fieldError(error: String?, field: String): String? =
-    if (error != null && error.contains(field, ignoreCase = true)) error else null

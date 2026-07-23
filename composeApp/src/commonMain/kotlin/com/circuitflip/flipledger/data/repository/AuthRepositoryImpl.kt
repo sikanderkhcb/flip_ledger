@@ -8,6 +8,7 @@ import com.circuitflip.flipledger.domain.repository.InventoryRepository
 import com.circuitflip.flipledger.domain.repository.ProfileRepository
 import com.circuitflip.flipledger.domain.repository.SalesRepository
 import com.circuitflip.flipledger.domain.repository.SessionState
+import com.circuitflip.flipledger.domain.util.FormValidation
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Apple
@@ -50,11 +51,13 @@ class AuthRepositoryImpl(
         }
 
     override suspend fun signIn(email: String, password: String): DataResult<Unit> {
-        validateEmail(email)?.let { return DataResult.Failure(it) }
-        validatePassword(password)?.let { return DataResult.Failure(it) }
+        val draft = AuthDraft(email = email, password = password)
+        FormValidation.firstError(FormValidation.auth(draft, isSignUp = false))?.let {
+            return DataResult.Failure(it)
+        }
         return try {
             client.auth.signInWith(Email) {
-                this.email = email
+                this.email = email.trim().lowercase()
                 this.password = password
             }
             syncProfileName()
@@ -65,15 +68,22 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun signUp(draft: AuthDraft): DataResult<Unit> {
-        if (draft.name.isBlank()) return DataResult.Failure(AppError.Validation("name", "Please enter your name."))
-        validateEmail(draft.email)?.let { return DataResult.Failure(it) }
-        validatePassword(draft.password)?.let { return DataResult.Failure(it) }
+        FormValidation.firstError(FormValidation.auth(draft, isSignUp = true))?.let {
+            return DataResult.Failure(it)
+        }
+        val name = draft.name.trim()
+        val email = draft.email.trim().lowercase()
+        val businessName = draft.businessName.trim()
         return try {
             client.auth.signUpWith(Email) {
-                this.email = draft.email
+                this.email = email
                 this.password = draft.password
                 // Persist the name on the auth user so every future login can recover it.
-                data = buildJsonObject { put("full_name", draft.name) }
+                data = buildJsonObject {
+                    put("full_name", name)
+                    if (draft.phone.isNotBlank()) put("phone", draft.phone.trim())
+                    if (businessName.isNotBlank()) put("business_name", businessName)
+                }
             }
             if (client.auth.currentUserOrNull() == null) {
                 return DataResult.Failure(
@@ -85,9 +95,9 @@ class AuthRepositoryImpl(
             // Set the owner name from the entered name (via the dedicated owner-name path so it
             // isn't later clobbered by the Setup/Settings form), and the business name if given.
             syncProfileName()
-            if (draft.businessName.isNotBlank()) {
+            if (businessName.isNotBlank()) {
                 profileRepository.updateProfile(
-                    profileRepository.getProfile().copy(businessName = draft.businessName),
+                    profileRepository.getProfile().copy(businessName = businessName),
                 )
             }
             DataResult.Success(Unit)
@@ -163,11 +173,4 @@ class AuthRepositoryImpl(
         }
     }
 
-    private fun validateEmail(email: String): AppError.Validation? =
-        if (!email.contains("@") || !email.contains(".")) {
-            AppError.Validation("email", "Enter a valid email address.")
-        } else null
-
-    private fun validatePassword(pw: String): AppError.Validation? =
-        if (pw.length < 8) AppError.Validation("password", "Password must be at least 8 characters.") else null
 }

@@ -56,7 +56,13 @@ fun Setup1Screen(vm: SetupViewModel, onContinue: () -> Unit, onBack: () -> Unit)
 fun Setup2Screen(vm: SetupViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
     val state by vm.state.collectAsState()
     SetupShell(step = 2, title = "What should we call your business?", subtitle = "This name organizes your inventory, reports, and partner settlements.", onContinue = onContinue, onBack = onBack) {
-        FlipTextField(state.businessName, vm::setBusinessName, "Business name", placeholder = "e.g. Circuit Flip Co.")
+        FlipTextField(
+            state.businessName,
+            vm::setBusinessName,
+            "Business name",
+            placeholder = "e.g. Circuit Flip Co.",
+            error = state.fieldErrors["businessName"],
+        )
         Spacer(Modifier.height(16.dp))
         FlipCard {
             FieldLabel("Preview")
@@ -82,16 +88,29 @@ fun Setup3Screen(vm: SetupViewModel, onFinish: () -> Unit, onBack: () -> Unit) {
         ChipGroup(Currency.entries, state.currency, { it.code }, vm::setCurrency)
         Spacer(Modifier.height(20.dp))
         if (state.workspaceType == WorkspaceType.PARTNER) {
-            FlipTextField(state.partnerName, vm::setPartnerName, "Partner name", placeholder = "Partner")
+            FlipTextField(
+                state.partnerName,
+                vm::setPartnerName,
+                "Partner name",
+                placeholder = "Partner",
+                error = state.fieldErrors["partnerName"],
+            )
             Spacer(Modifier.height(20.dp))
             FieldLabel("Default profit split (partner mode)")
             Text("You ${state.splitYou}%", style = FlipTheme.typography.headingM, color = FlipTheme.colors.textDefault)
             Slider(value = state.splitYou.toFloat(), onValueChange = { vm.setSplit((it / 5).toInt() * 5) }, valueRange = 0f..100f, steps = 19)
+            state.fieldErrors["splitYou"]?.let {
+                Text(it, style = FlipTheme.typography.caption, color = FlipTheme.colors.error)
+            }
             Spacer(Modifier.height(20.dp))
         }
         FieldLabel("Primary resale category")
         val cats = listOf("phones" to "Phones", "laptops" to "Laptops", "tablets" to "Tablets", "gaming" to "Gaming", "mixed" to "Mixed")
         ChipGroup(cats, cats.firstOrNull { it.first == state.categoryPref }, { it.second }, { vm.setCategoryPref(it.first) })
+        state.fieldErrors["categoryPref"]?.let {
+            Spacer(Modifier.height(8.dp))
+            Text(it, style = FlipTheme.typography.caption, color = FlipTheme.colors.error)
+        }
         state.error?.let {
             Spacer(Modifier.height(12.dp))
             Text(it, style = FlipTheme.typography.bodyM, color = FlipTheme.colors.error)

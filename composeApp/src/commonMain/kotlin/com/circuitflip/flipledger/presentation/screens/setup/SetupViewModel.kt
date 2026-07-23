@@ -5,6 +5,7 @@ import com.circuitflip.flipledger.domain.model.BusinessProfile
 import com.circuitflip.flipledger.domain.model.Currency
 import com.circuitflip.flipledger.domain.model.WorkspaceType
 import com.circuitflip.flipledger.domain.repository.ProfileRepository
+import com.circuitflip.flipledger.domain.util.FormValidation
 import com.circuitflip.flipledger.presentation.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +22,7 @@ data class SetupUiState(
     val saved: Boolean = false,
     val loading: Boolean = false,
     val error: String? = null,
+    val fieldErrors: Map<String, String> = emptyMap(),
 )
 
 /** Onboarding steps 04–06: workspace type, business name, business preferences. */
@@ -48,23 +50,57 @@ class SetupViewModel(private val profileRepository: ProfileRepository) : BaseVie
         }
     }
 
-    fun setWorkspace(type: WorkspaceType) = _state.update { it.copy(workspaceType = type) }
-    fun setBusinessName(v: String) = _state.update { it.copy(businessName = v) }
-    fun setPartnerName(v: String) = _state.update { it.copy(partnerName = v) }
-    fun setCurrency(c: Currency) = _state.update { it.copy(currency = c) }
-    fun setSplit(v: Int) = _state.update { it.copy(splitYou = v) }
-    fun setCategoryPref(id: String) = _state.update { it.copy(categoryPref = id) }
+    fun setWorkspace(type: WorkspaceType) =
+        _state.update {
+            it.copy(
+                workspaceType = type,
+                error = null,
+                fieldErrors = if (type == WorkspaceType.SOLO) it.fieldErrors - "partnerName" else it.fieldErrors,
+            )
+        }
+    fun setBusinessName(v: String) = updateField("businessName") { it.copy(businessName = v) }
+    fun setPartnerName(v: String) = updateField("partnerName") { it.copy(partnerName = v) }
+    fun setCurrency(c: Currency) = _state.update { it.copy(currency = c, error = null) }
+    fun setSplit(v: Int) = updateField("splitYou") { it.copy(splitYou = v) }
+    fun setCategoryPref(id: String) = updateField("categoryPref") { it.copy(categoryPref = id) }
+
+    fun validateStep(step: Int): Boolean {
+        val s = _state.value
+        val fields = when (step) {
+            2 -> setOf("businessName")
+            3 -> setOf("partnerName", "splitYou", "categoryPref")
+            else -> emptySet()
+        }
+        val errors = when (step) {
+            2 -> FormValidation.setupBusinessName(s.businessName)
+            3 -> FormValidation.setupPreferences(s.workspaceType, s.partnerName, s.splitYou, s.categoryPref)
+            else -> emptyMap()
+        }
+        _state.update {
+            it.copy(
+                error = null,
+                fieldErrors = it.fieldErrors.filterKeys { key -> key !in fields } + errors,
+            )
+        }
+        return errors.isEmpty()
+    }
 
     fun finish(onSaved: () -> Unit) {
         if (_state.value.loading) return
         val s = _state.value
-        _state.update { it.copy(loading = true, error = null) }
+        val fieldErrors = FormValidation.setupBusinessName(s.businessName) +
+            FormValidation.setupPreferences(s.workspaceType, s.partnerName, s.splitYou, s.categoryPref)
+        if (fieldErrors.isNotEmpty()) {
+            _state.update { it.copy(error = null, fieldErrors = fieldErrors) }
+            return
+        }
+        _state.update { it.copy(loading = true, error = null, fieldErrors = emptyMap()) }
         scope.launch {
             runCatching {
                 profileRepository.updateProfile(
                     BusinessProfile(
-                        businessName = s.businessName.ifBlank { "My Resale Business" },
-                        partnerName = s.partnerName.ifBlank { "Partner" },
+                        businessName = s.businessName.trim(),
+                        partnerName = s.partnerName.trim().ifBlank { "Partner" },
                         workspaceType = s.workspaceType,
                         currency = s.currency,
                         splitYou = s.splitYou,
@@ -83,6 +119,15 @@ class SetupViewModel(private val profileRepository: ProfileRepository) : BaseVie
                     )
                 }
             }
+        }
+    }
+
+    private fun updateField(field: String, update: (SetupUiState) -> SetupUiState) {
+        _state.update {
+            update(it).copy(
+                error = null,
+                fieldErrors = it.fieldErrors - field,
+            )
         }
     }
 }

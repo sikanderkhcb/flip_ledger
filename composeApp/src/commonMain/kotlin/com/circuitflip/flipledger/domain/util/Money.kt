@@ -22,8 +22,11 @@ object Money {
     fun parseToCentsOrNull(input: String): Long? {
         val cleaned = input.trim().replace(",", "").removePrefix("$")
         if (!AMOUNT_PATTERN.matches(cleaned)) return null
-        val dollars = cleaned.toDoubleOrNull() ?: return null
-        return (dollars * 100).roundToLong()
+        val parts = cleaned.split(".", limit = 2)
+        val dollars = parts[0].toLongOrNull() ?: return null
+        val fractional = parts.getOrNull(1)?.padEnd(2, '0')?.toLongOrNull() ?: 0L
+        if (dollars > (Long.MAX_VALUE - fractional) / 100L) return null
+        return dollars * 100L + fractional
     }
 
     fun dollarsToCents(dollars: Number): Long = (dollars.toDouble() * 100).roundToLong()

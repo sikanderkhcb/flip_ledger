@@ -42,6 +42,11 @@ class InventoryViewModel(observeInventory: ObserveInventoryUseCase) : BaseViewMo
         }.onEach { _state.value = it }.launchIn(scope)
     }
 
-    fun onQuery(v: String) = query.update { v }
+    // Search is transient rather than persisted, so cap it instead of showing a form error.
+    fun onQuery(v: String) = query.update { v.take(MAX_SEARCH_LENGTH) }
     fun onFilter(status: DeviceStatus?) = filter.update { status }
+
+    private companion object {
+        const val MAX_SEARCH_LENGTH = 100
+    }
 }

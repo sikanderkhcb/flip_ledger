@@ -33,6 +33,7 @@ fun AddCostScreen(vm: AddCostViewModel, onBack: () -> Unit, onSaved: () -> Unit)
     val saved by vm.saved.collectAsState()
     val submitting by vm.submitting.collectAsState()
     val error by vm.error.collectAsState()
+    val fieldErrors by vm.fieldErrors.collectAsState()
     LaunchedEffect(saved) { if (saved) onSaved() }
 
     ScreenScaffold {
@@ -40,15 +41,39 @@ fun AddCostScreen(vm: AddCostViewModel, onBack: () -> Unit, onSaved: () -> Unit)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
             FieldLabel("Cost type")
             ChipGroup(CostType.entries, d.type, { it.label }, vm::setType)
+            fieldErrors["type"]?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(it, style = FlipTheme.typography.caption, color = FlipTheme.colors.error)
+            }
             Spacer(Modifier.height(20.dp))
-            FlipTextField(d.amount, vm::setAmount, "Amount", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true)
+            FlipTextField(
+                d.amount,
+                vm::setAmount,
+                "Amount",
+                placeholder = "0",
+                keyboardType = KeyboardType.Decimal,
+                currencyPrefix = true,
+                error = fieldErrors["amount"],
+            )
             Spacer(Modifier.height(16.dp))
             FieldLabel("Paid by")
             ChipGroup(PaidBy.entries, d.paidBy, { it.label }, vm::setPaidBy)
             Spacer(Modifier.height(20.dp))
-            FlipTextField(d.date, vm::setDate, "Date", placeholder = "YYYY-MM-DD")
+            FlipTextField(
+                d.date,
+                vm::setDate,
+                "Date",
+                placeholder = "YYYY-MM-DD",
+                error = fieldErrors["date"],
+            )
             Spacer(Modifier.height(16.dp))
-            FlipTextField(d.note, vm::setNote, "Note (optional)", placeholder = "Screen replacement")
+            FlipTextField(
+                d.note,
+                vm::setNote,
+                "Note (optional)",
+                placeholder = "Screen replacement",
+                error = fieldErrors["note"],
+            )
             error?.let {
                 Spacer(Modifier.height(12.dp))
                 Text(it, style = FlipTheme.typography.bodyS, color = FlipTheme.colors.error)
