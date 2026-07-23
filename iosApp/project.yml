@@ -36,6 +36,42 @@ targets:
             echo "Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED"
             exit 0
           fi
+
+          java_major_version() {
+            java_version=$("$1/bin/java" -version 2>&1 | awk -F '"' '/version/ { print $2; exit }')
+            case "$java_version" in
+              1.*) echo "$java_version" | cut -d. -f2 ;;
+              *) echo "$java_version" | cut -d. -f1 ;;
+            esac
+          }
+
+          java_major=0
+          if [ -x "${JAVA_HOME:-}/bin/java" ]; then
+            java_major=$(java_major_version "$JAVA_HOME")
+          fi
+          case "$java_major" in
+            ''|*[!0-9]*) java_major=0 ;;
+          esac
+
+          if [ "$java_major" -lt 17 ]; then
+            for java_home_candidate in \
+              "/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home" \
+              "/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"; do
+              if [ -x "$java_home_candidate/bin/java" ]; then
+                JAVA_HOME="$java_home_candidate"
+                java_major=$(java_major_version "$JAVA_HOME")
+                break
+              fi
+            done
+          fi
+
+          if [ "$java_major" -lt 17 ]; then
+            echo "error: Flip Ledger requires JDK 17 or newer. Install OpenJDK 17 and rebuild."
+            exit 1
+          fi
+
+          export JAVA_HOME
+          export PATH="$JAVA_HOME/bin:$PATH"
           cd "$SRCROOT/.."
           ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode
 schemes:

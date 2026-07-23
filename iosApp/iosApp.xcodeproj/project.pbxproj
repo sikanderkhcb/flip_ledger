@@ -112,7 +112,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
+			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\"\n  exit 0\nfi\n\njava_major_version() {\n  java_version=$(\"$1/bin/java\" -version 2>&1 | awk -F '\"' '/version/ { print $2; exit }')\n  case \"$java_version\" in\n    1.*) echo \"$java_version\" | cut -d. -f2 ;;\n    *) echo \"$java_version\" | cut -d. -f1 ;;\n  esac\n}\n\njava_major=0\nif [ -x \"${JAVA_HOME:-}/bin/java\" ]; then\n  java_major=$(java_major_version \"$JAVA_HOME\")\nfi\ncase \"$java_major\" in\n  ''|*[!0-9]*) java_major=0 ;;\nesac\n\nif [ \"$java_major\" -lt 17 ]; then\n  for java_home_candidate in \\\n    \"/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home\" \\\n    \"/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home\"; do\n    if [ -x \"$java_home_candidate/bin/java\" ]; then\n      JAVA_HOME=\"$java_home_candidate\"\n      java_major=$(java_major_version \"$JAVA_HOME\")\n      break\n    fi\n  done\nfi\n\nif [ \"$java_major\" -lt 17 ]; then\n  echo \"error: Flip Ledger requires JDK 17 or newer. Install OpenJDK 17 and rebuild.\"\n  exit 1\nfi\n\nexport JAVA_HOME\nexport PATH=\"$JAVA_HOME/bin:$PATH\"\ncd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
