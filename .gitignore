@@ -1,0 +1,22 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+local.properties
+
+# Xcode user-specific state
+**/xcuserdata/
+**/*.xcuserstate
+DerivedData/
+
+# macOS
+.DS_Store
+
+# Local secrets
+.env
+.env.*
+!.env.example

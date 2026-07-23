@@ -16,6 +16,7 @@ data class InventoryUiState(
     val statusFilter: DeviceStatus? = null,   // null == "All"
     val devices: List<Device> = emptyList(),
     val totalInvestedCents: Long = 0,
+    val error: String? = null,
 )
 
 class InventoryViewModel(observeInventory: ObserveInventoryUseCase) : BaseViewModel() {
@@ -27,7 +28,7 @@ class InventoryViewModel(observeInventory: ObserveInventoryUseCase) : BaseViewMo
     val state = _state.asStateFlow()
 
     init {
-        combine(observeInventory(), query, filter) { all, q, f ->
+        combine(observeInventory(), query, filter, observeInventory.error) { all, q, f, error ->
             val filtered = all
                 .filter { f == null || it.status == f }
                 .filter { q.isBlank() || it.model.contains(q, ignoreCase = true) }
@@ -36,10 +37,16 @@ class InventoryViewModel(observeInventory: ObserveInventoryUseCase) : BaseViewMo
                 statusFilter = f,
                 devices = filtered,
                 totalInvestedCents = all.sumOf { it.investedCents },
+                error = error?.userMessage(),
             )
         }.onEach { _state.value = it }.launchIn(scope)
     }
 
-    fun onQuery(v: String) = query.update { v }
+    // Search is transient rather than persisted, so cap it instead of showing a form error.
+    fun onQuery(v: String) = query.update { v.take(MAX_SEARCH_LENGTH) }
     fun onFilter(status: DeviceStatus?) = filter.update { status }
+
+    private companion object {
+        const val MAX_SEARCH_LENGTH = 100
+    }
 }

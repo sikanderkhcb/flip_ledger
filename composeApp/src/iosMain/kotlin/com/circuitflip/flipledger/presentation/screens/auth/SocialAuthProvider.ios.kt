@@ -1,3 +1,5 @@
 package com.circuitflip.flipledger.presentation.screens.auth
 
-actual val platformSocialAuthProvider: SocialAuthProvider = SocialAuthProvider.APPLE
+// Do not present a fake Apple sign-in button. Set this to APPLE only after the native
+// AuthenticationServices flow and Apple entitlement are configured.
+actual val platformSocialAuthProvider: SocialAuthProvider? = null

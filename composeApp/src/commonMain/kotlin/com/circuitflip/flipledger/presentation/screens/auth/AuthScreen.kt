@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Login
-import androidx.compose.material3.Divider
+import androidx.compose.material.icons.automirrored.rounded.Login
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -61,47 +61,81 @@ fun AuthScreen(signUp: Boolean, onBack: () -> Unit, onAuthenticated: () -> Unit,
             )
             Spacer(Modifier.height(24.dp))
 
-            val socialProvider = platformSocialAuthProvider
-            val googleSignIn = rememberGoogleSignInLauncher(
-                onIdToken = { token -> vm.startLoading(); vm.signInWithGoogleToken(token) },
-                onError = { message -> vm.onSocialError(message) },
+            platformSocialAuthProvider?.let { socialProvider ->
+                val googleSignIn = rememberGoogleSignInLauncher(
+                    onIdToken = { token -> vm.startLoading(); vm.signInWithGoogleToken(token) },
+                    onError = { message -> vm.onSocialError(message) },
+                )
+                OutlinedButton(
+                    onClick = {
+                        when (socialProvider) {
+                            SocialAuthProvider.GOOGLE -> googleSignIn()
+                            SocialAuthProvider.APPLE -> vm.onSocialError("Apple sign-in is not configured.")
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, FlipTheme.colors.borderDefault),
+                ) {
+                    Icon(Icons.AutoMirrored.Rounded.Login, contentDescription = null, tint = FlipTheme.colors.textDefault)
+                    Spacer(Modifier.width(8.dp))
+                    Text(socialProvider.label, style = FlipTheme.typography.headingS, color = FlipTheme.colors.textDefault)
+                }
+
+                Spacer(Modifier.height(20.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    HorizontalDivider(Modifier.weight(1f), color = FlipTheme.colors.borderDefault)
+                    Text("OR", style = FlipTheme.typography.caption, color = FlipTheme.colors.textWeakest, modifier = Modifier.padding(horizontal = 12.dp))
+                    HorizontalDivider(Modifier.weight(1f), color = FlipTheme.colors.borderDefault)
+                }
+                Spacer(Modifier.height(20.dp))
+            }
+
+            if (signUp) {
+                FlipTextField(
+                    state.draft.name,
+                    vm::onName,
+                    "Full name",
+                    placeholder = "Jordan Rivera",
+                    error = state.fieldErrors["name"],
+                )
+                Spacer(Modifier.height(16.dp))
+            }
+            FlipTextField(
+                state.draft.email,
+                vm::onEmail,
+                "Email",
+                placeholder = "you@business.com",
+                keyboardType = KeyboardType.Email,
+                error = state.fieldErrors["email"],
             )
-            OutlinedButton(
-                onClick = {
-                    when (socialProvider) {
-                        SocialAuthProvider.GOOGLE -> googleSignIn()
-                        SocialAuthProvider.APPLE -> vm.signInWithApple()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, FlipTheme.colors.borderDefault),
-            ) {
-                Icon(Icons.Rounded.Login, contentDescription = null, tint = FlipTheme.colors.textDefault)
-                Spacer(Modifier.width(8.dp))
-                Text(socialProvider.label, style = FlipTheme.typography.headingS, color = FlipTheme.colors.textDefault)
-            }
-
-            Spacer(Modifier.height(20.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Divider(Modifier.weight(1f), color = FlipTheme.colors.borderDefault)
-                Text("OR", style = FlipTheme.typography.caption, color = FlipTheme.colors.textWeakest, modifier = Modifier.padding(horizontal = 12.dp))
-                Divider(Modifier.weight(1f), color = FlipTheme.colors.borderDefault)
-            }
-            Spacer(Modifier.height(20.dp))
-
-            if (signUp) {
-                FlipTextField(state.draft.name, vm::onName, "Full name", placeholder = "Jordan Rivera")
-                Spacer(Modifier.height(16.dp))
-            }
-            FlipTextField(state.draft.email, vm::onEmail, "Email", placeholder = "you@business.com", keyboardType = KeyboardType.Email, error = fieldError(state.error, "email"))
             Spacer(Modifier.height(16.dp))
-            FlipTextField(state.draft.password, vm::onPassword, "Password", placeholder = "At least 8 characters", isPassword = true, error = fieldError(state.error, "password"))
+            FlipTextField(
+                state.draft.password,
+                vm::onPassword,
+                "Password",
+                placeholder = "At least 8 characters",
+                isPassword = true,
+                error = state.fieldErrors["password"],
+            )
             if (signUp) {
                 Spacer(Modifier.height(16.dp))
-                FlipTextField(state.draft.phone, vm::onPhone, "Phone", placeholder = "(555) 123-4567", keyboardType = KeyboardType.Phone)
+                FlipTextField(
+                    state.draft.phone,
+                    vm::onPhone,
+                    "Phone",
+                    placeholder = "(555) 123-4567",
+                    keyboardType = KeyboardType.Phone,
+                    error = state.fieldErrors["phone"],
+                )
                 Spacer(Modifier.height(16.dp))
-                FlipTextField(state.draft.businessName, vm::onBusinessName, "Business name (if any)", placeholder = "e.g. Circuit Flip Co.")
+                FlipTextField(
+                    state.draft.businessName,
+                    vm::onBusinessName,
+                    "Business name (if any)",
+                    placeholder = "e.g. Circuit Flip Co.",
+                    error = state.fieldErrors["businessName"],
+                )
             }
             state.error?.let {
                 Spacer(Modifier.height(12.dp))
@@ -119,7 +153,3 @@ fun AuthScreen(signUp: Boolean, onBack: () -> Unit, onAuthenticated: () -> Unit,
         }
     }
 }
-
-private fun fieldError(error: String?, field: String): String? =
-    if (error != null && error.contains(field, ignoreCase = true)) error else null
-

@@ -16,7 +16,7 @@ sealed class AppError(open val cause: Throwable? = null) {
 
     /** Human-friendly message safe to surface directly in the UI. */
     fun userMessage(): String = when (this) {
-        is Network -> "No internet connection. Your data is saved locally and will sync automatically."
+        is Network -> "No internet connection. Check your connection and try again."
         is Unauthorized -> reason ?: "Your session expired. Please sign in again."
         is NotFound -> "We couldn't find that $what."
         is Validation -> message

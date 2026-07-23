@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,7 +66,7 @@ fun DeviceDetailScreen(deviceId: String, onBack: () -> Unit, onAddCost: () -> Un
                         "Identifier" to device.identifier,
                         "Purchased" to "${device.purchaseDate} · ${device.source?.label ?: "—"}",
                     ).forEachIndexed { i, (l, v) ->
-                        DetailRow(l, v); if (i < 4) Divider(color = colors.borderDefault)
+                        DetailRow(l, v); if (i < 4) HorizontalDivider(color = colors.borderDefault)
                     }
                 }
                 Spacer(Modifier.height(20.dp))
@@ -79,7 +79,7 @@ fun DeviceDetailScreen(deviceId: String, onBack: () -> Unit, onAddCost: () -> Un
                 Spacer(Modifier.height(8.dp))
                 FlipCard {
                     DetailRow("Purchase price", Money.format(device.purchasePriceCents))
-                    device.costs.forEach { c -> Divider(color = colors.borderDefault); DetailRow(c.type.label, Money.format(c.amountCents)) }
+                    device.costs.forEach { c -> HorizontalDivider(color = colors.borderDefault); DetailRow(c.type.label, Money.format(c.amountCents)) }
                 }
                 Spacer(Modifier.height(20.dp))
 
@@ -105,6 +105,10 @@ fun DeviceDetailScreen(deviceId: String, onBack: () -> Unit, onAddCost: () -> Un
                 PrimaryButton(vm.primaryActionLabel(device.status), onClick = { if (vm.onPrimaryAction(device.status)) onStartSale() }, loading = submitting)
                 Spacer(Modifier.height(10.dp))
                 SecondaryButton("Add cost", onAddCost)
+                state.error?.let {
+                    Spacer(Modifier.height(8.dp))
+                    Text(it, style = FlipTheme.typography.bodyS, color = colors.error)
+                }
             }
         }
     }
@@ -126,4 +130,3 @@ private fun DetailRow(label: String, value: String) {
         Text(value, style = FlipTheme.typography.headingS, color = FlipTheme.colors.textDefault)
     }
 }
-

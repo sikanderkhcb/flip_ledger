@@ -7,4 +7,5 @@ enum class SocialAuthProvider(val label: String) {
 }
 
 /** Google on Android, Apple on iOS. */
-expect val platformSocialAuthProvider: SocialAuthProvider
+/** Null when a platform's provider has not been configured and must not be advertised. */
+expect val platformSocialAuthProvider: SocialAuthProvider?

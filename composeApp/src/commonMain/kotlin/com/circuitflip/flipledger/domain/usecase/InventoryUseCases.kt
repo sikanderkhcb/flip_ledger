@@ -4,18 +4,20 @@ import com.circuitflip.flipledger.core.DataResult
 import com.circuitflip.flipledger.domain.model.Cost
 import com.circuitflip.flipledger.domain.model.CostDraft
 import com.circuitflip.flipledger.domain.model.Device
-import com.circuitflip.flipledger.domain.model.DeviceCategory
 import com.circuitflip.flipledger.domain.model.DeviceDraft
 import com.circuitflip.flipledger.domain.model.DeviceStatus
 import com.circuitflip.flipledger.domain.model.LockStatus
 import com.circuitflip.flipledger.domain.repository.InventoryRepository
+import com.circuitflip.flipledger.domain.util.Dates
+import com.circuitflip.flipledger.domain.util.FormValidation
+import com.circuitflip.flipledger.domain.util.Ids
 import com.circuitflip.flipledger.domain.util.Money
 import kotlinx.coroutines.flow.Flow
-import kotlin.random.Random
 
 /** Reactive inventory stream, optionally filtered by status and search query. */
 class ObserveInventoryUseCase(private val repo: InventoryRepository) {
     operator fun invoke(): Flow<List<Device>> = repo.observeInventory()
+    val error get() = repo.error
 }
 
 class ObserveDeviceUseCase(private val repo: InventoryRepository) {
@@ -28,7 +30,13 @@ class ObserveDeviceUseCase(private val repo: InventoryRepository) {
  */
 class AddDeviceUseCase(private val repo: InventoryRepository) {
     suspend operator fun invoke(draft: DeviceDraft): DataResult<Device> {
-        val id = "d" + Random.nextLong().toString(16).takeLast(10)
+        FormValidation.firstError(FormValidation.device(draft))?.let {
+            return DataResult.Failure(it)
+        }
+        val category = requireNotNull(draft.category)
+        val price = requireNotNull(Money.parseToCentsOrNull(draft.price))
+        val purchaseDate = requireNotNull(Dates.parseIso(draft.date))
+        val id = Ids.new("d")
         val identifier = if (draft.identifierLast4.isNotBlank()) {
             "IMEI ●●●●${draft.identifierLast4.takeLast(4)}"
         } else {
@@ -36,18 +44,18 @@ class AddDeviceUseCase(private val repo: InventoryRepository) {
         }
         val device = Device(
             id = id,
-            category = draft.category ?: DeviceCategory.PHONE,
-            model = draft.model.ifBlank { "Untitled device" },
+            category = category,
+            model = draft.model.trim(),
             identifier = identifier,
             condition = draft.condition,
-            storage = draft.storage.ifBlank { "—" },
+            storage = draft.storage.trim().ifBlank { "—" },
             lock = draft.lock ?: LockStatus.NONE,
-            purchasePriceCents = Money.parseToCents(draft.price),
+            purchasePriceCents = price,
             source = draft.source,
-            purchaseDate = draft.date,
+            purchaseDate = purchaseDate.toString(),
             costs = emptyList(),
             status = DeviceStatus.PURCHASED,
-            daysHeld = 0,
+            daysHeld = Dates.daysBetween(purchaseDate.toString()) ?: 0,
         )
         return repo.addDevice(device)
     }
@@ -58,19 +66,26 @@ class UpdateDeviceStatusUseCase(private val repo: InventoryRepository) {
         repo.updateStatus(deviceId, status)
 }
 
-/** Persists a cost from a [CostDraft]. No-op if type/amount missing (matches reference). */
+/** Validates and persists a cost from a [CostDraft]. */
 class AddCostUseCase(private val repo: InventoryRepository) {
     suspend operator fun invoke(deviceId: String, draft: CostDraft): DataResult<Unit> {
-        val type = draft.type ?: return DataResult.Success(Unit)
-        val cents = Money.parseToCents(draft.amount)
-        if (cents <= 0L) return DataResult.Success(Unit)
+        FormValidation.firstError(FormValidation.cost(draft))?.let {
+            return DataResult.Failure(it)
+        }
+        val purchaseDate = repo.getDevice(deviceId)?.purchaseDate
+        FormValidation.firstError(FormValidation.cost(draft, purchaseDate))?.let {
+            return DataResult.Failure(it)
+        }
+        val type = requireNotNull(draft.type)
+        val cents = requireNotNull(Money.parseToCentsOrNull(draft.amount))
+        val date = requireNotNull(Dates.parseIso(draft.date))
         val cost = Cost(
-            id = "c" + Random.nextLong().toString(16).takeLast(8),
+            id = Ids.new("c"),
             type = type,
             amountCents = cents,
             paidBy = draft.paidBy,
-            date = draft.date,
-            note = draft.note,
+            date = date.toString(),
+            note = draft.note.trim(),
         )
         return repo.addCost(deviceId, cost)
     }

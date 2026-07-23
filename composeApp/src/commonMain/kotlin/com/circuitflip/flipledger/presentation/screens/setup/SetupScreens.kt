@@ -32,7 +32,7 @@ import com.circuitflip.flipledger.presentation.theme.FlipTheme
 @Composable
 fun Setup1Screen(vm: SetupViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
     val state by vm.state.collectAsState()
-    SetupShell(step = 1, title = "Let's set up your workspace", subtitle = "Takes less than a minute — you can change this later.", onContinue = onContinue, onBack = onBack) {
+    SetupShell(step = 1, title = "Let's set up your workspace", subtitle = "Takes less than a minute.", onContinue = onContinue, onBack = onBack) {
         listOf(
             Triple(WorkspaceType.SOLO, "Solo reseller", "Just you — track your own devices and profit."),
             Triple(WorkspaceType.PARTNER, "Partner business", "Split costs, profit, and settlements with a partner."),
@@ -56,7 +56,13 @@ fun Setup1Screen(vm: SetupViewModel, onContinue: () -> Unit, onBack: () -> Unit)
 fun Setup2Screen(vm: SetupViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
     val state by vm.state.collectAsState()
     SetupShell(step = 2, title = "What should we call your business?", subtitle = "This name organizes your inventory, reports, and partner settlements.", onContinue = onContinue, onBack = onBack) {
-        FlipTextField(state.businessName, vm::setBusinessName, "Business name", placeholder = "e.g. Circuit Flip Co.")
+        FlipTextField(
+            state.businessName,
+            vm::setBusinessName,
+            "Business name",
+            placeholder = "e.g. Circuit Flip Co.",
+            error = state.fieldErrors["businessName"],
+        )
         Spacer(Modifier.height(16.dp))
         FlipCard {
             FieldLabel("Preview")
@@ -69,19 +75,46 @@ fun Setup2Screen(vm: SetupViewModel, onContinue: () -> Unit, onBack: () -> Unit)
 @Composable
 fun Setup3Screen(vm: SetupViewModel, onFinish: () -> Unit, onBack: () -> Unit) {
     val state by vm.state.collectAsState()
-    SetupShell(step = 3, title = "A few business preferences", subtitle = "You can adjust these anytime in Settings.", continueLabel = "Finish Setup", onContinue = { vm.finish(); onFinish() }, onBack = onBack) {
+    SetupShell(
+        step = 3,
+        title = "A few business preferences",
+        subtitle = "These preferences are saved to your workspace.",
+        continueLabel = "Finish Setup",
+        loading = state.loading,
+        onContinue = { vm.finish(onFinish) },
+        onBack = onBack,
+    ) {
         FieldLabel("Currency")
         ChipGroup(Currency.entries, state.currency, { it.code }, vm::setCurrency)
         Spacer(Modifier.height(20.dp))
         if (state.workspaceType == WorkspaceType.PARTNER) {
+            FlipTextField(
+                state.partnerName,
+                vm::setPartnerName,
+                "Partner name",
+                placeholder = "Partner",
+                error = state.fieldErrors["partnerName"],
+            )
+            Spacer(Modifier.height(20.dp))
             FieldLabel("Default profit split (partner mode)")
             Text("You ${state.splitYou}%", style = FlipTheme.typography.headingM, color = FlipTheme.colors.textDefault)
             Slider(value = state.splitYou.toFloat(), onValueChange = { vm.setSplit((it / 5).toInt() * 5) }, valueRange = 0f..100f, steps = 19)
+            state.fieldErrors["splitYou"]?.let {
+                Text(it, style = FlipTheme.typography.caption, color = FlipTheme.colors.error)
+            }
             Spacer(Modifier.height(20.dp))
         }
         FieldLabel("Primary resale category")
         val cats = listOf("phones" to "Phones", "laptops" to "Laptops", "tablets" to "Tablets", "gaming" to "Gaming", "mixed" to "Mixed")
         ChipGroup(cats, cats.firstOrNull { it.first == state.categoryPref }, { it.second }, { vm.setCategoryPref(it.first) })
+        state.fieldErrors["categoryPref"]?.let {
+            Spacer(Modifier.height(8.dp))
+            Text(it, style = FlipTheme.typography.caption, color = FlipTheme.colors.error)
+        }
+        state.error?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(it, style = FlipTheme.typography.bodyM, color = FlipTheme.colors.error)
+        }
     }
 }
 
@@ -92,6 +125,7 @@ private fun SetupShell(
     title: String,
     subtitle: String,
     continueLabel: String = "Continue",
+    loading: Boolean = false,
     onContinue: () -> Unit,
     onBack: () -> Unit,
     body: @Composable () -> Unit,
@@ -104,7 +138,7 @@ private fun SetupShell(
             body()
         }
         Column(Modifier.padding(24.dp)) {
-            PrimaryButton(continueLabel, onContinue)
+            PrimaryButton(continueLabel, onContinue, loading = loading)
             if (step > 1) {
                 Spacer(Modifier.height(4.dp))
                 LinkButton("Back", onBack, Modifier.fillMaxWidth())

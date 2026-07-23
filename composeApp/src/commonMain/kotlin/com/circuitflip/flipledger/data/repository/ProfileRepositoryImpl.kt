@@ -1,10 +1,10 @@
 package com.circuitflip.flipledger.data.repository
 
+import com.circuitflip.flipledger.core.AppError
 import com.circuitflip.flipledger.data.remote.dto.ProfileDto
 import com.circuitflip.flipledger.data.remote.dto.toDomain
 import com.circuitflip.flipledger.domain.model.BusinessProfile
 import com.circuitflip.flipledger.domain.repository.ProfileRepository
-import com.russhwolf.settings.Settings
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
@@ -27,20 +27,27 @@ import kotlinx.coroutines.withContext
  */
 class ProfileRepositoryImpl(
     private val client: SupabaseClient,
-    private val settings: Settings,
     private val io: CoroutineDispatcher,
 ) : ProfileRepository {
 
-    // Seed the owner name from the last cached value so returning users see it instantly on
-    // launch (no placeholder/flash) while the network refresh happens in the background.
-    private val _profile = MutableStateFlow(
-        BusinessProfile(ownerName = settings.getStringOrNull(K_OWNER_NAME) ?: ""),
-    )
+    private val _profile = MutableStateFlow(BusinessProfile())
+    private val _error = MutableStateFlow<AppError?>(null)
+    override val error = _error
     private val scope = CoroutineScope(SupervisorJob() + io)
+    private var cacheGeneration: Long = 0
 
     override fun observeProfile(): Flow<BusinessProfile> =
         _profile.onStart {
-            scope.launch { runCatching { getProfile().also { _profile.value = it; cacheOwner(it.ownerName) } } }
+            scope.launch {
+                val generation = cacheGeneration
+                try {
+                    val profile = getProfile()
+                    if (generation == cacheGeneration) _profile.value = profile
+                    _error.value = null
+                } catch (t: Throwable) {
+                    _error.value = AppError.from(t)
+                }
+            }
         }
 
     override suspend fun getProfile(): BusinessProfile = withContext(io) {
@@ -50,27 +57,35 @@ class ProfileRepositoryImpl(
 
     override suspend fun updateProfile(profile: BusinessProfile) {
         withContext(io) {
-            val uid = client.auth.currentUserOrNull()?.id ?: return@withContext
+            val generation = cacheGeneration
+            val uid = client.auth.currentUserOrNull()?.id
+                ?: throw IllegalStateException("Authentication required.")
             // Note: owner_name is intentionally NOT written here — it's owned by the auth sync
             // (see [setOwnerName]). Writing it from form defaults would clobber the real name.
             client.from("profiles").update({
                 set("business_name", profile.businessName)
                 set("workspace_type", profile.workspaceType.id)
+                set("partner_name", profile.partnerName)
                 set("split_you", profile.splitYou)
                 set("currency", profile.currency.code)
                 set("category_pref", profile.categoryPref)
             }) { filter { eq("id", uid) } }
             // Keep the real owner name that the auth sync already put in place.
-            _profile.value = profile.copy(ownerName = _profile.value.ownerName)
+            if (generation == cacheGeneration) {
+                _profile.value = profile.copy(ownerName = _profile.value.ownerName)
+            }
         }
     }
 
     override suspend fun setOwnerName(name: String) {
         withContext(io) {
-            val uid = client.auth.currentUserOrNull()?.id ?: return@withContext
+            val generation = cacheGeneration
+            val uid = client.auth.currentUserOrNull()?.id
+                ?: throw IllegalStateException("Authentication required.")
             client.from("profiles").update({ set("owner_name", name) }) { filter { eq("id", uid) } }
-            _profile.value = _profile.value.copy(ownerName = name)
-            cacheOwner(name)
+            if (generation == cacheGeneration) {
+                _profile.value = _profile.value.copy(ownerName = name)
+            }
         }
     }
 
@@ -80,7 +95,8 @@ class ProfileRepositoryImpl(
 
     override suspend fun setOnboarded() {
         withContext(io) {
-            val uid = client.auth.currentUserOrNull()?.id ?: return@withContext
+            val uid = client.auth.currentUserOrNull()?.id
+                ?: throw IllegalStateException("Authentication required.")
             client.from("profiles").update({ set("onboarded", true) }) { filter { eq("id", uid) } }
         }
     }
@@ -90,12 +106,9 @@ class ProfileRepositoryImpl(
         return client.from("profiles").select { filter { eq("id", uid) } }.decodeSingleOrNull()
     }
 
-    /** Persists the owner name locally so it can be shown instantly on the next launch. */
-    private fun cacheOwner(name: String) {
-        if (name.isNotBlank()) settings.putString(K_OWNER_NAME, name)
-    }
-
-    private companion object {
-        const val K_OWNER_NAME = "profile.ownerName.cache"
+    override fun clearCache() {
+        cacheGeneration += 1
+        _profile.value = BusinessProfile()
+        _error.value = null
     }
 }

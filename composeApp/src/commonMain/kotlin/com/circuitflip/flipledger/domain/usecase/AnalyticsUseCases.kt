@@ -9,39 +9,37 @@ import com.circuitflip.flipledger.domain.model.DeviceStatus
 import com.circuitflip.flipledger.domain.model.ReportMetric
 import com.circuitflip.flipledger.domain.model.Sale
 import com.circuitflip.flipledger.domain.model.Settlement
-import com.circuitflip.flipledger.domain.model.SettlementActivity
+import com.circuitflip.flipledger.domain.util.Dates
 import com.circuitflip.flipledger.domain.util.Money
 import com.circuitflip.flipledger.domain.util.ProfitCalculator
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /** Builds the dashboard metric bundle from live inventory + sales. */
 class GetDashboardMetricsUseCase {
     operator fun invoke(inventory: List<Device>, sales: List<Sale>): DashboardMetrics {
-        val tz = TimeZone.currentSystemDefault()
+        val today = Dates.today()
         // A month index (year*12 + month) so we can compare "this month" vs "last month".
-        val thisMonth = Clock.System.now().toLocalDateTime(tz).let { it.year * 12 + (it.monthNumber - 1) }
-        fun monthOf(sale: Sale): Int? = sale.createdAt?.let { ts ->
-            runCatching { Instant.parse(ts).toLocalDateTime(tz).let { it.year * 12 + (it.monthNumber - 1) } }.getOrNull()
-        }
-        val thisMonthNet = sales.filter { monthOf(it) == thisMonth }.sumOf { it.netProfitCents }
-        val lastMonthNet = sales.filter { monthOf(it) == thisMonth - 1 }.sumOf { it.netProfitCents }
+        val thisMonth = Dates.monthIndex(today)
+        fun monthOf(sale: Sale): Int? =
+            Dates.parseIso(sale.soldDate)?.let(Dates::monthIndex)
+                ?: Dates.monthIndexFromTimestamp(sale.createdAt)
+        val thisMonthSales = sales.filter { monthOf(it) == thisMonth }
+        val lastMonthSales = sales.filter { monthOf(it) == thisMonth - 1 }
+        val thisMonthNet = thisMonthSales.sumOf { it.netProfitCents }
+        val lastMonthNet = lastMonthSales.sumOf { it.netProfitCents }
         val deltaPercent = when {
             lastMonthNet != 0L -> (((thisMonthNet - lastMonthNet).toDouble() / abs(lastMonthNet)) * 100).roundToInt()
             thisMonthNet > 0L -> 100 // grew from nothing
             else -> 0
         }
         return DashboardMetrics(
-            monthNetProfitCents = ProfitCalculator.monthNetProfitCents(sales),
+            monthNetProfitCents = ProfitCalculator.monthNetProfitCents(thisMonthSales),
             profitDeltaPercent = deltaPercent,
             inventoryValueCents = ProfitCalculator.inventoryValueCents(inventory),
-            avgMarginFraction = ProfitCalculator.averageMargin(sales),
+            avgMarginFraction = ProfitCalculator.averageMargin(thisMonthSales),
             agingCount = ProfitCalculator.agingCount(inventory),
-            salesThisMonth = sales.size,
+            salesThisMonth = thisMonthSales.size,
         )
     }
 }
@@ -69,37 +67,27 @@ class GetAttentionItemsUseCase {
                 ),
             )
         }
-        // Missing-evidence nudge targets an accessory with no photos (reference behavior).
-        inventory.firstOrNull { it.model.contains("AirPods", ignoreCase = true) }?.let {
-            add(
-                AttentionItem(
-                    title = "${it.model} — no photos added",
-                    subtitle = "Missing evidence for records",
-                    kind = AttentionKind.MISSING_EVIDENCE,
-                    deviceId = it.id,
-                ),
-            )
-        }
     }
 }
 
 /** Computes the partner settlement summary. */
 class GetSettlementUseCase {
     operator fun invoke(profile: BusinessProfile, sales: List<Sale>): Settlement {
-        val total = ProfitCalculator.monthNetProfitCents(sales)
+        val today = Dates.today()
+        val monthSales = sales.filter {
+            Dates.isInMonth(it.soldDate, today.year, today.monthNumber) ||
+                (Dates.parseIso(it.soldDate) == null &&
+                    Dates.monthIndexFromTimestamp(it.createdAt) == Dates.monthIndex(today))
+        }
+        val total = ProfitCalculator.monthNetProfitCents(monthSales)
         val yourShare = (total * profile.splitYou / 100.0).toLong()
         val partnerShare = (total * profile.splitPartner / 100.0).toLong()
-        // Reference: already paid $150 this cycle, so amount owed nets that out.
-        val owed = maxOf(0L, partnerShare - Money.dollarsToCents(150))
         return Settlement(
             totalProfitCents = total,
-            owedCents = owed,
+            owedCents = maxOf(0L, partnerShare),
             yourShareCents = yourShare,
             partnerShareCents = partnerShare,
-            activity = listOf(
-                SettlementActivity("Jul 1 — Paid ${profile.partnerName} (June settlement)", Money.dollarsToCents(150)),
-                SettlementActivity("Jun 1 — Paid ${profile.partnerName} (May settlement)", Money.dollarsToCents(310)),
-            ),
+            activity = emptyList(),
         )
     }
 }

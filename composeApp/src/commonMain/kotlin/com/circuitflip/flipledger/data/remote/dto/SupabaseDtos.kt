@@ -14,6 +14,7 @@ import com.circuitflip.flipledger.domain.model.PaidBy
 import com.circuitflip.flipledger.domain.model.Sale
 import com.circuitflip.flipledger.domain.model.SalesChannel
 import com.circuitflip.flipledger.domain.model.WorkspaceType
+import com.circuitflip.flipledger.domain.util.Dates
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -71,10 +72,10 @@ data class SaleDto(
 @Serializable
 data class ProfileDto(
     val id: String,
-    @SerialName("business_name") val businessName: String = "Circuit Flip Co.",
+    @SerialName("business_name") val businessName: String = "",
     @SerialName("owner_name") val ownerName: String = "",
-    @SerialName("partner_name") val partnerName: String = "Marcus",
-    @SerialName("workspace_type") val workspaceType: String = "partner",
+    @SerialName("partner_name") val partnerName: String = "Partner",
+    @SerialName("workspace_type") val workspaceType: String = "solo",
     @SerialName("split_you") val splitYou: Int = 60,
     val currency: String = "USD",
     @SerialName("category_pref") val categoryPref: String = "mixed",
@@ -96,7 +97,7 @@ fun DeviceDto.toDomain(costs: List<Cost>): Device = Device(
     purchaseDate = purchaseDate,
     costs = costs,
     status = DeviceStatus.fromLabel(status),
-    daysHeld = daysHeld,
+    daysHeld = Dates.daysBetween(purchaseDate) ?: daysHeld,
 )
 
 fun CostDto.toDomain(): Cost = Cost(

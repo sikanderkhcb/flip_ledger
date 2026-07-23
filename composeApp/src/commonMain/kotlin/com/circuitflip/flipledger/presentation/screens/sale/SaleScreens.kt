@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -36,12 +36,28 @@ import com.circuitflip.flipledger.presentation.theme.FlipTheme
 fun Sale1Screen(vm: SaleViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
     val s by vm.state.collectAsState()
     SaleShell(1, "Record the sale", s.device?.let { "Invested ${Money.format(it.investedCents)}" }, onContinue, onBack, showBack = false) {
-        FlipTextField(s.draft.price, vm::setPrice, "Sale price", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true)
+        FlipTextField(
+            s.draft.price,
+            vm::setPrice,
+            "Sale price",
+            placeholder = "0",
+            keyboardType = KeyboardType.Decimal,
+            currencyPrefix = true,
+            error = s.fieldErrors["price"],
+        )
         Spacer(Modifier.height(16.dp))
-        FlipTextField(s.draft.date, vm::setDate, "Sale date", placeholder = "Jul 12, 2026")
+        FlipTextField(
+            s.draft.date,
+            vm::setDate,
+            "Sale date",
+            placeholder = "YYYY-MM-DD",
+            error = s.fieldErrors["date"],
+        )
         Spacer(Modifier.height(20.dp))
         FieldLabel("Sales channel")
         ChipGroup(SalesChannel.entries, s.draft.channel, { it.label }, vm::setChannel)
+        FieldError(s.fieldErrors["channel"])
+        s.error?.let { FieldError(it) }
     }
 }
 
@@ -50,26 +66,26 @@ fun Sale1Screen(vm: SaleViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
 fun Sale2Screen(vm: SaleViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
     val s by vm.state.collectAsState()
     SaleShell(2, "Any final selling costs?", "Adding these gives you your true net profit.", onContinue, onBack) {
-        FlipTextField(s.draft.platformFee, vm::setPlatformFee, "Platform fee", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true)
+        FlipTextField(s.draft.platformFee, vm::setPlatformFee, "Platform fee", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true, error = s.fieldErrors["platformFee"])
         Spacer(Modifier.height(16.dp))
-        FlipTextField(s.draft.paymentFee, vm::setPaymentFee, "Payment processing fee", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true)
+        FlipTextField(s.draft.paymentFee, vm::setPaymentFee, "Payment processing fee", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true, error = s.fieldErrors["paymentFee"])
         Spacer(Modifier.height(16.dp))
-        FlipTextField(s.draft.shipping, vm::setShipping, "Shipping", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true)
+        FlipTextField(s.draft.shipping, vm::setShipping, "Shipping", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true, error = s.fieldErrors["shipping"])
         Spacer(Modifier.height(16.dp))
-        FlipTextField(s.draft.packaging, vm::setPackaging, "Packaging", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true)
+        FlipTextField(s.draft.packaging, vm::setPackaging, "Packaging", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true, error = s.fieldErrors["packaging"])
         Spacer(Modifier.height(16.dp))
-        FlipTextField(s.draft.otherFee, vm::setOtherFee, "Other", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true)
+        FlipTextField(s.draft.otherFee, vm::setOtherFee, "Other", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true, error = s.fieldErrors["otherFee"])
     }
 }
 
 /** 18 · Sale Step 3 — profit preview with full breakdown. */
 @Composable
-fun Sale3Screen(vm: SaleViewModel, onComplete: () -> Unit, onBack: () -> Unit) {
+fun Sale3Screen(vm: SaleViewModel, onBack: () -> Unit) {
     val s by vm.state.collectAsState()
     val submitting by vm.submitting.collectAsState()
     val colors = FlipTheme.colors
     val device = s.device
-    SaleShell(3, "Here's your result", null, continueLabel = "Complete Sale", loading = submitting, onContinue = { vm.complete(); onComplete() }, onBack = onBack) {
+    SaleShell(3, "Here's your result", null, continueLabel = "Complete Sale", loading = submitting, onContinue = vm::complete, onBack = onBack) {
         FlipCard {
             Text("NET PROFIT", style = FlipTheme.typography.caption, color = colors.textWeakest)
             Spacer(Modifier.height(6.dp))
@@ -91,10 +107,22 @@ fun Sale3Screen(vm: SaleViewModel, onComplete: () -> Unit, onBack: () -> Unit) {
                         Text(label, style = FlipTheme.typography.bodyM, color = colors.textWeaker)
                         Text(value, style = FlipTheme.typography.headingS, color = color)
                     }
-                    if (i < breakdown.lastIndex) Divider(color = colors.borderDefault)
+                    if (i < breakdown.lastIndex) HorizontalDivider(color = colors.borderDefault)
                 }
             }
         }
+        s.error?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(it, style = FlipTheme.typography.bodyS, color = colors.error)
+        }
+    }
+}
+
+@Composable
+private fun FieldError(message: String?) {
+    message?.let {
+        Spacer(Modifier.height(8.dp))
+        Text(it, style = FlipTheme.typography.caption, color = FlipTheme.colors.error)
     }
 }
 

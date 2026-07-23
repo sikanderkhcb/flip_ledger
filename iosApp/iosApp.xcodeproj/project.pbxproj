@@ -9,11 +9,13 @@
 /* Begin PBXBuildFile section */
 		307C2654CD5972A25FB7FD87 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668CECA83ACC03A83C85A623 /* iOSApp.swift */; };
 		56B0305B5D3847FC6B326502 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8509E5A49E4A5CAAEB3ADB /* ContentView.swift */; };
+		8B777B9AB9014D9BBE5F41D0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8B777B9AB9014D9BBE5F41D1 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		668CECA83ACC03A83C85A623 /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
 		86038AE1032E284E79B32AD6 /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8B777B9AB9014D9BBE5F41D1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C117AD187833E2513BD2F553 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		CE8509E5A49E4A5CAAEB3ADB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -22,6 +24,7 @@
 		1DB4B685CAEE8BEFEBBAEF94 /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
+				8B777B9AB9014D9BBE5F41D1 /* Assets.xcassets */,
 				CE8509E5A49E4A5CAAEB3ADB /* ContentView.swift */,
 				C117AD187833E2513BD2F553 /* Info.plist */,
 				668CECA83ACC03A83C85A623 /* iOSApp.swift */,
@@ -54,6 +57,7 @@
 			buildPhases = (
 				4B44A75E2FD10EFE3C97FCF5 /* Compile Kotlin Framework */,
 				297B59D9CE634556D6007C40 /* Sources */,
+				8B777B9AB9014D9BBE5F41D2 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -94,6 +98,17 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		8B777B9AB9014D9BBE5F41D2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8B777B9AB9014D9BBE5F41D0 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXShellScriptBuildPhase section */
 		4B44A75E2FD10EFE3C97FCF5 /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -112,7 +127,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
+			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\"\n  exit 0\nfi\n\njava_major_version() {\n  java_version=$(\"$1/bin/java\" -version 2>&1 | awk -F '\"' '/version/ { print $2; exit }')\n  case \"$java_version\" in\n    1.*) echo \"$java_version\" | cut -d. -f2 ;;\n    *) echo \"$java_version\" | cut -d. -f1 ;;\n  esac\n}\n\njava_major=0\nif [ -x \"${JAVA_HOME:-}/bin/java\" ]; then\n  java_major=$(java_major_version \"$JAVA_HOME\")\nfi\ncase \"$java_major\" in\n  ''|*[!0-9]*) java_major=0 ;;\nesac\n\nif [ \"$java_major\" -lt 17 ]; then\n  for java_home_candidate in \\\n    \"/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home\" \\\n    \"/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home\"; do\n    if [ -x \"$java_home_candidate/bin/java\" ]; then\n      JAVA_HOME=\"$java_home_candidate\"\n      java_major=$(java_major_version \"$JAVA_HOME\")\n      break\n    fi\n  done\nfi\n\nif [ \"$java_major\" -lt 17 ]; then\n  echo \"error: Flip Ledger requires JDK 17 or newer. Install OpenJDK 17 and rebuild.\"\n  exit 1\nfi\n\nexport JAVA_HOME\nexport PATH=\"$JAVA_HOME/bin:$PATH\"\ncd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

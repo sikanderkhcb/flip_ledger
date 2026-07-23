@@ -24,6 +24,13 @@ class MoneyTest {
     }
 
     @Test
+    fun rejectsMalformedOrOverPreciseAmounts() {
+        assertEquals(null, Money.parseToCentsOrNull("1..2"))
+        assertEquals(null, Money.parseToCentsOrNull("1.234"))
+        assertEquals(123L, Money.parseToCentsOrNull("1.23"))
+    }
+
+    @Test
     fun formatsWholeDollarsWithThousands() {
         assertEquals("$1,050", Money.format(105000L))
         assertEquals("$0", Money.format(0L))

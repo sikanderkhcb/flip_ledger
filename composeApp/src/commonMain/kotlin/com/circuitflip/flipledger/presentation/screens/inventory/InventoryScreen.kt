@@ -85,6 +85,11 @@ fun InventoryScreen(onAddDevice: () -> Unit, onOpenDevice: (String) -> Unit) {
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 0.dp, 20.dp, 88.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                state.error?.let { message ->
+                    item {
+                        Text(message, style = FlipTheme.typography.bodyM, color = colors.error)
+                    }
+                }
                 if (state.devices.isEmpty()) {
                     item {
                         Text(

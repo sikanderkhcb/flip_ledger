@@ -41,10 +41,8 @@ import com.circuitflip.flipledger.presentation.theme.FlipTheme
 @Composable
 fun AddDevice1Screen(vm: AddDeviceViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
     val d by vm.draft.collectAsState()
-    // Read the observed draft here (in this composable's scope) so Continue re-evaluates
-    // whenever the category or model changes.
-    val canContinue = d.category != null && d.model.isNotBlank()
-    WizardShell(1, "What are you adding?", null, continueEnabled = canContinue, onContinue = onContinue, onBack = onBack, showBack = false) {
+    val errors by vm.fieldErrors.collectAsState()
+    WizardShell(1, "What are you adding?", null, onContinue = onContinue, onBack = onBack, showBack = false) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             DeviceCategory.entries.take(3).forEach { cat -> CategoryCard(cat, d.category == cat, { vm.setCategory(cat) }, Modifier.weight(1f)) }
         }
@@ -53,8 +51,15 @@ fun AddDevice1Screen(vm: AddDeviceViewModel, onContinue: () -> Unit, onBack: () 
             DeviceCategory.entries.drop(3).forEach { cat -> CategoryCard(cat, d.category == cat, { vm.setCategory(cat) }, Modifier.weight(1f)) }
             Spacer(Modifier.weight(1f))
         }
+        FieldError(errors["category"])
         Spacer(Modifier.height(20.dp))
-        FlipTextField(d.model, vm::setModel, "Model name", placeholder = "e.g. iPhone 15 Pro 256GB")
+        FlipTextField(
+            d.model,
+            vm::setModel,
+            "Model name",
+            placeholder = "e.g. iPhone 15 Pro 256GB",
+            error = errors["model"],
+        )
     }
 }
 
@@ -62,13 +67,29 @@ fun AddDevice1Screen(vm: AddDeviceViewModel, onContinue: () -> Unit, onBack: () 
 @Composable
 fun AddDevice2Screen(vm: AddDeviceViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
     val d by vm.draft.collectAsState()
+    val errors by vm.fieldErrors.collectAsState()
     WizardShell(2, "What did it cost you?", "This becomes the starting point for true profit.", onContinue = onContinue, onBack = onBack) {
-        FlipTextField(d.price, vm::setPrice, "Purchase price", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true)
+        FlipTextField(
+            d.price,
+            vm::setPrice,
+            "Purchase price",
+            placeholder = "0",
+            keyboardType = KeyboardType.Decimal,
+            currencyPrefix = true,
+            error = errors["price"],
+        )
         Spacer(Modifier.height(16.dp))
-        FlipTextField(d.date, vm::setDate, "Purchase date", placeholder = "Jul 12, 2026")
+        FlipTextField(
+            d.date,
+            vm::setDate,
+            "Purchase date",
+            placeholder = "YYYY-MM-DD",
+            error = errors["date"],
+        )
         Spacer(Modifier.height(20.dp))
         FieldLabel("Source")
         ChipGroup(AcquisitionSource.entries, d.source, { it.label }, vm::setSource)
+        FieldError(errors["source"])
     }
 }
 
@@ -76,16 +97,38 @@ fun AddDevice2Screen(vm: AddDeviceViewModel, onContinue: () -> Unit, onBack: () 
 @Composable
 fun AddDevice3Screen(vm: AddDeviceViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
     val d by vm.draft.collectAsState()
+    val errors by vm.fieldErrors.collectAsState()
     WizardShell(3, "Tell us about the device", "Optional but helpful for records and disputes.", onContinue = onContinue, onBack = onBack) {
         FieldLabel("Condition")
         ChipGroup(DeviceCondition.entries, d.condition, { it.label }, vm::setCondition)
         Spacer(Modifier.height(20.dp))
-        FlipTextField(d.identifierLast4, vm::setIdentifier, "Serial / IMEI", placeholder = "Last 4 digits are enough")
+        FlipTextField(
+            d.identifierLast4,
+            vm::setIdentifier,
+            "Serial / IMEI",
+            placeholder = "Last 4 digits are enough",
+            keyboardType = KeyboardType.Number,
+            error = errors["identifier"],
+        )
         Spacer(Modifier.height(16.dp))
-        FlipTextField(d.storage, vm::setStorage, "Storage", placeholder = "256GB")
+        FlipTextField(
+            d.storage,
+            vm::setStorage,
+            "Storage",
+            placeholder = "256GB",
+            error = errors["storage"],
+        )
         Spacer(Modifier.height(20.dp))
         FieldLabel("Lock status")
         ChipGroup(listOf(LockStatus.UNLOCKED, LockStatus.LOCKED), d.lock, { it.label }, vm::setLock)
+    }
+}
+
+@Composable
+private fun FieldError(message: String?) {
+    message?.let {
+        Spacer(Modifier.height(8.dp))
+        Text(it, style = FlipTheme.typography.caption, color = FlipTheme.colors.error)
     }
 }
 
@@ -94,6 +137,7 @@ fun AddDevice3Screen(vm: AddDeviceViewModel, onContinue: () -> Unit, onBack: () 
 fun AddDevice4Screen(vm: AddDeviceViewModel, onEdit: () -> Unit, onBack: () -> Unit) {
     val d by vm.draft.collectAsState()
     val submitting by vm.submitting.collectAsState()
+    val error by vm.error.collectAsState()
     val rows = listOf(
         "Category" to (d.category?.label ?: "—"),
         "Model" to d.model.ifBlank { "—" },
@@ -110,11 +154,15 @@ fun AddDevice4Screen(vm: AddDeviceViewModel, onEdit: () -> Unit, onBack: () -> U
                     Text(label, style = FlipTheme.typography.bodyM, color = FlipTheme.colors.textWeaker)
                     Text(value, style = FlipTheme.typography.headingS, color = FlipTheme.colors.textDefault)
                 }
-                if (i < rows.lastIndex) androidx.compose.material3.Divider(color = FlipTheme.colors.borderDefault)
+                if (i < rows.lastIndex) androidx.compose.material3.HorizontalDivider(color = FlipTheme.colors.borderDefault)
             }
         }
         Spacer(Modifier.height(8.dp))
         LinkButton("Edit", onEdit, Modifier.fillMaxWidth())
+        error?.let {
+            Spacer(Modifier.height(8.dp))
+            Text(it, style = FlipTheme.typography.bodyS, color = FlipTheme.colors.error)
+        }
     }
 }
 

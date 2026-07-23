@@ -101,12 +101,22 @@ private fun AppNavHost(start: StartDestination) {
         val atEntry = navigator.current is Route.Splash ||
             navigator.current is Route.Welcome ||
             navigator.current is Route.Auth
-        if (atEntry) {
-            when (start) {
-                StartDestination.HOME -> navigator.resetTo(Route.Dashboard)
-                StartDestination.ONBOARDING -> navigator.resetTo(Route.Setup1)
-                StartDestination.AUTH, StartDestination.LOADING -> {}
+        when (start) {
+            StartDestination.AUTH -> {
+                store.clearSession()
+                saleVm.reset()
+                if (!atEntry) navigator.resetTo(Route.Welcome)
             }
+            StartDestination.HOME -> {
+                if (atEntry) navigator.resetTo(Route.Dashboard)
+            }
+            StartDestination.ONBOARDING -> {
+                if (atEntry) {
+                    setupVm.start()
+                    navigator.resetTo(Route.Setup1)
+                }
+            }
+            StartDestination.LOADING -> Unit
         }
     }
 
@@ -143,7 +153,11 @@ private fun AppNavHost(start: StartDestination) {
         )
 
         Route.Setup1 -> Setup1Screen(setupVm, onContinue = { navigator.push(Route.Setup2) }, onBack = { navigator.back() })
-        Route.Setup2 -> Setup2Screen(setupVm, onContinue = { navigator.push(Route.Setup3) }, onBack = { navigator.back() })
+        Route.Setup2 -> Setup2Screen(
+            setupVm,
+            onContinue = { if (setupVm.validateStep(2)) navigator.push(Route.Setup3) },
+            onBack = { navigator.back() },
+        )
         Route.Setup3 -> Setup3Screen(setupVm, onFinish = { navigator.resetTo(Route.Dashboard) }, onBack = { navigator.back() })
 
         Route.Dashboard -> DashboardScreen(
@@ -158,9 +172,21 @@ private fun AppNavHost(start: StartDestination) {
             onOpenDevice = { id -> navigator.push(Route.DeviceDetail(id)) },
         )
 
-        Route.AddDevice1 -> AddDevice1Screen(addDeviceVm, onContinue = { navigator.push(Route.AddDevice2) }, onBack = { navigator.back() })
-        Route.AddDevice2 -> AddDevice2Screen(addDeviceVm, onContinue = { navigator.push(Route.AddDevice3) }, onBack = { navigator.back() })
-        Route.AddDevice3 -> AddDevice3Screen(addDeviceVm, onContinue = { navigator.push(Route.AddDevice4) }, onBack = { navigator.back() })
+        Route.AddDevice1 -> AddDevice1Screen(
+            addDeviceVm,
+            onContinue = { if (addDeviceVm.validateStep(1)) navigator.push(Route.AddDevice2) },
+            onBack = { navigator.back() },
+        )
+        Route.AddDevice2 -> AddDevice2Screen(
+            addDeviceVm,
+            onContinue = { if (addDeviceVm.validateStep(2)) navigator.push(Route.AddDevice3) },
+            onBack = { navigator.back() },
+        )
+        Route.AddDevice3 -> AddDevice3Screen(
+            addDeviceVm,
+            onContinue = { if (addDeviceVm.validateStep(3)) navigator.push(Route.AddDevice4) },
+            onBack = { navigator.back() },
+        )
         Route.AddDevice4 -> AddDevice4Screen(addDeviceVm, onEdit = { navigator.popTo(Route.AddDevice1) }, onBack = { navigator.back() })
 
         Route.DeviceAdded -> {
@@ -191,9 +217,17 @@ private fun AppNavHost(start: StartDestination) {
 
         Route.AddCost -> AddCostScreen(addCostVm, onBack = { navigator.back() }, onSaved = { navigator.back() })
 
-        Route.Sale1 -> Sale1Screen(saleVm, onContinue = { navigator.push(Route.Sale2) }, onBack = { navigator.back() })
-        Route.Sale2 -> Sale2Screen(saleVm, onContinue = { navigator.push(Route.Sale3) }, onBack = { navigator.back() })
-        Route.Sale3 -> Sale3Screen(saleVm, onComplete = { /* nav on state.completed */ }, onBack = { navigator.back() })
+        Route.Sale1 -> Sale1Screen(
+            saleVm,
+            onContinue = { if (saleVm.validateStep(1)) navigator.push(Route.Sale2) },
+            onBack = { navigator.back() },
+        )
+        Route.Sale2 -> Sale2Screen(
+            saleVm,
+            onContinue = { if (saleVm.validateStep(2)) navigator.push(Route.Sale3) },
+            onBack = { navigator.back() },
+        )
+        Route.Sale3 -> Sale3Screen(saleVm, onBack = { navigator.back() })
 
         Route.SaleComplete -> SaleCompleteScreen(
             sale = store.lastSale,
@@ -213,7 +247,6 @@ private fun AppNavHost(start: StartDestination) {
 
         Route.Subscription -> SubscriptionScreen(
             onBack = { navigator.back() },
-            onStartTrial = { navigator.back() },
         )
 
         Route.Settings -> SettingsScreen(
