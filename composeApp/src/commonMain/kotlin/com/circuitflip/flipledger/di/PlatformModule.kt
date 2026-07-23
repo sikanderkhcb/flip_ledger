@@ -2,5 +2,5 @@ package com.circuitflip.flipledger.di
 
 import org.koin.core.module.Module
 
-/** Platform-specific bindings (settings storage, DB driver factory). */
+/** Platform-specific settings storage bindings. */
 expect fun platformModule(): Module

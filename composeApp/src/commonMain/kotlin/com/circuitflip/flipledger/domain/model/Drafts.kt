@@ -1,5 +1,7 @@
 package com.circuitflip.flipledger.domain.model
 
+import com.circuitflip.flipledger.domain.util.Dates
+
 /**
  * Mutable in-progress form models used by the multi-step wizards. They hold raw string
  * input (matching text-field values) and are only converted to domain objects on submit.
@@ -8,7 +10,7 @@ data class DeviceDraft(
     val category: DeviceCategory? = null,
     val model: String = "",
     val price: String = "",
-    val date: String = "Jul 12, 2026",
+    val date: String = Dates.todayIso(),
     val source: AcquisitionSource? = null,
     val condition: DeviceCondition? = null,
     val identifierLast4: String = "",   // "Last 4 digits are enough"
@@ -20,13 +22,13 @@ data class CostDraft(
     val type: CostType? = null,
     val amount: String = "",
     val paidBy: PaidBy = PaidBy.YOU,
-    val date: String = "Jul 12, 2026",
+    val date: String = Dates.todayIso(),
     val note: String = "",
 )
 
 data class SaleDraft(
     val price: String = "",
-    val date: String = "Jul 12, 2026",
+    val date: String = Dates.todayIso(),
     val channel: SalesChannel? = null,
     val platformFee: String = "",
     val paymentFee: String = "",

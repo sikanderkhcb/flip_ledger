@@ -60,9 +60,14 @@ fun SalesHistoryScreen(onBack: () -> Unit, onOpenSettlement: () -> Unit) {
                         StatCard(
                             label = "AVG MARGIN",
                             value = state.avgMargin.toPercentLabel(),
-                            caption = "Across ${state.sales.size} sales",
+                            caption = "Across ${state.summarySalesCount} sales this month",
                             modifier = Modifier.weight(1f),
                         )
+                    }
+                }
+                state.error?.let { message ->
+                    item {
+                        Text(message, style = FlipTheme.typography.bodyM, color = colors.error)
                     }
                 }
                 item {

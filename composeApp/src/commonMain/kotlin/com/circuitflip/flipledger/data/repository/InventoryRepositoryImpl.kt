@@ -1,5 +1,6 @@
 package com.circuitflip.flipledger.data.repository
 
+import com.circuitflip.flipledger.core.AppError
 import com.circuitflip.flipledger.core.DataResult
 import com.circuitflip.flipledger.core.runCatchingResult
 import com.circuitflip.flipledger.data.remote.dto.CostDto
@@ -12,6 +13,7 @@ import com.circuitflip.flipledger.domain.model.DeviceStatus
 import com.circuitflip.flipledger.domain.repository.InventoryRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -22,6 +24,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.put
 
 /**
  * Inventory backed by the Supabase `devices` + `costs` tables. A shared [MutableStateFlow]
@@ -35,67 +41,120 @@ class InventoryRepositoryImpl(
 ) : InventoryRepository {
 
     private val _devices = MutableStateFlow<List<Device>>(emptyList())
+    private val _error = MutableStateFlow<AppError?>(null)
+    override val error = _error
     private val scope = CoroutineScope(SupervisorJob() + io)
+    private var cacheGeneration: Long = 0
 
     // Emit the cached list immediately and refresh in the background, so opening a screen
     // never blocks on the network (the cached device shows instantly, then updates).
     override fun observeInventory(): Flow<List<Device>> =
-        _devices.onStart { scope.launch { runCatching { refresh() } } }
+        _devices.onStart { scope.launch { refreshSafely() } }
 
     override fun observeDevice(id: String): Flow<Device?> =
         observeInventory().map { list -> list.firstOrNull { it.id == id } }
 
     override suspend fun getDevice(id: String): Device? {
-        if (_devices.value.none { it.id == id }) runCatching { refresh() }
+        if (_devices.value.none { it.id == id }) refreshSafely()
         return _devices.value.firstOrNull { it.id == id }
     }
 
     override suspend fun addDevice(device: Device): DataResult<Device> = withContext(io) {
+        val generation = cacheGeneration
         val result = runCatchingResult {
-            client.from("devices").insert(device.toDto())
-            if (device.costs.isNotEmpty()) {
-                client.from("costs").insert(device.costs.map { it.toDto(device.id) })
-            }
+            client.postgrest.rpc(
+                function = "add_device",
+                parameters = buildJsonObject {
+                    put("p_device", INVENTORY_RPC_JSON.encodeToJsonElement(device.toDto()))
+                    put(
+                        "p_costs",
+                        INVENTORY_RPC_JSON.encodeToJsonElement(device.costs.map { it.toDto(device.id) }),
+                    )
+                },
+            )
             device
         }
-        runCatching { refresh() }
+        if (generation == cacheGeneration && result is DataResult.Success) {
+            _devices.value = listOf(result.data) + _devices.value.filterNot { it.id == result.data.id }
+        }
+        refreshSafely()
         result
     }
 
     override suspend fun updateStatus(deviceId: String, status: DeviceStatus): DataResult<Unit> = withContext(io) {
+        val generation = cacheGeneration
         val result = runCatchingResult {
             client.from("devices").update({ set("status", status.label) }) { filter { eq("id", deviceId) } }
             Unit
         }
-        runCatching { refresh() }
+        if (generation == cacheGeneration && result is DataResult.Success) {
+            _devices.value = _devices.value.map {
+                if (it.id == deviceId) it.copy(status = status) else it
+            }
+        }
+        refreshSafely()
         result
     }
 
     override suspend fun addCost(deviceId: String, cost: Cost): DataResult<Unit> = withContext(io) {
+        val generation = cacheGeneration
         val result = runCatchingResult {
             client.from("costs").insert(cost.toDto(deviceId))
             Unit
         }
-        runCatching { refresh() }
+        if (generation == cacheGeneration && result is DataResult.Success) {
+            _devices.value = _devices.value.map {
+                if (it.id == deviceId) it.copy(costs = it.costs + cost) else it
+            }
+        }
+        refreshSafely()
         result
     }
 
     override suspend fun deleteDevice(deviceId: String): DataResult<Unit> = withContext(io) {
+        val generation = cacheGeneration
         val result = runCatchingResult {
             client.from("devices").delete { filter { eq("id", deviceId) } }
             Unit
         }
-        runCatching { refresh() }
+        if (generation == cacheGeneration && result is DataResult.Success) removeCachedDevice(deviceId)
+        refreshSafely()
         result
+    }
+
+    override fun clearCache() {
+        cacheGeneration += 1
+        _devices.value = emptyList()
+        _error.value = null
+    }
+
+    override fun removeCachedDevice(deviceId: String) {
+        _devices.value = _devices.value.filterNot { it.id == deviceId }
     }
 
     /** Reloads devices + their costs into [_devices]. Costs are grouped by device id. */
     private suspend fun refresh() = withContext(io) {
+        val generation = cacheGeneration
         val devices = client.from("devices")
             .select { order("created_at", Order.DESCENDING) }
             .decodeList<DeviceDto>()
         val costs = client.from("costs").select().decodeList<CostDto>()
         val byDevice = costs.groupBy { it.deviceId }
-        _devices.value = devices.map { d -> d.toDomain(byDevice[d.id].orEmpty().map { it.toDomain() }) }
+        if (generation == cacheGeneration) {
+            _devices.value = devices.map { d ->
+                d.toDomain(byDevice[d.id].orEmpty().map { it.toDomain() })
+            }
+        }
+    }
+
+    private suspend fun refreshSafely() {
+        try {
+            refresh()
+            _error.value = null
+        } catch (t: Throwable) {
+            _error.value = AppError.from(t)
+        }
     }
 }
+
+private val INVENTORY_RPC_JSON = Json { encodeDefaults = true }

@@ -1,5 +1,7 @@
 package com.circuitflip.flipledger.presentation.screens.settings
 
+import com.circuitflip.flipledger.core.onFailure
+import com.circuitflip.flipledger.core.onSuccess
 import com.circuitflip.flipledger.domain.model.BusinessProfile
 import com.circuitflip.flipledger.domain.repository.AuthRepository
 import com.circuitflip.flipledger.domain.repository.ProfileRepository
@@ -16,6 +18,7 @@ data class SettingsUiState(
     val profile: BusinessProfile = BusinessProfile(),
     val isDark: Boolean = false,
     val signedOut: Boolean = false,
+    val error: String? = null,
 )
 
 class SettingsViewModel(
@@ -28,10 +31,20 @@ class SettingsViewModel(
 
     init {
         combine(profileRepository.observeProfile(), themeRepository.isDark) { profile, dark ->
-            SettingsUiState(profile = profile, isDark = dark, signedOut = _state.value.signedOut)
+            SettingsUiState(
+                profile = profile,
+                isDark = dark,
+                signedOut = _state.value.signedOut,
+                error = _state.value.error,
+            )
         }.onEach { _state.value = it }.launchIn(scope)
     }
 
     fun toggleTheme() = scope.launch { themeRepository.setDark(!_state.value.isDark) }
-    fun signOut() = scope.launch { authRepository.signOut(); _state.value = _state.value.copy(signedOut = true) }
+    fun signOut() = scope.launch {
+        _state.value = _state.value.copy(error = null)
+        authRepository.signOut()
+            .onSuccess { _state.value = _state.value.copy(signedOut = true) }
+            .onFailure { _state.value = _state.value.copy(error = it.userMessage()) }
+    }
 }

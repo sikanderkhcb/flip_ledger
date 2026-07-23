@@ -4,7 +4,9 @@ import com.circuitflip.flipledger.core.AppError
 import com.circuitflip.flipledger.core.DataResult
 import com.circuitflip.flipledger.domain.model.AuthDraft
 import com.circuitflip.flipledger.domain.repository.AuthRepository
+import com.circuitflip.flipledger.domain.repository.InventoryRepository
 import com.circuitflip.flipledger.domain.repository.ProfileRepository
+import com.circuitflip.flipledger.domain.repository.SalesRepository
 import com.circuitflip.flipledger.domain.repository.SessionState
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -15,6 +17,7 @@ import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
@@ -28,13 +31,17 @@ import kotlinx.serialization.json.put
 class AuthRepositoryImpl(
     private val client: SupabaseClient,
     private val profileRepository: ProfileRepository,
+    private val inventoryRepository: InventoryRepository,
+    private val salesRepository: SalesRepository,
 ) : AuthRepository {
 
     override val isAuthenticated: Flow<Boolean> =
         client.auth.sessionStatus.map { it is SessionStatus.Authenticated }
 
     override val sessionState: Flow<SessionState> =
-        client.auth.sessionStatus.map {
+        client.auth.sessionStatus.onEach {
+            if (it is SessionStatus.NotAuthenticated) clearSessionData()
+        }.map {
             when (it) {
                 is SessionStatus.Authenticated -> SessionState.AUTHENTICATED
                 is SessionStatus.NotAuthenticated -> SessionState.UNAUTHENTICATED
@@ -67,6 +74,13 @@ class AuthRepositoryImpl(
                 this.password = draft.password
                 // Persist the name on the auth user so every future login can recover it.
                 data = buildJsonObject { put("full_name", draft.name) }
+            }
+            if (client.auth.currentUserOrNull() == null) {
+                return DataResult.Failure(
+                    AppError.Unauthorized(
+                        "Account created. Check your email to confirm it before signing in.",
+                    ),
+                )
             }
             // Set the owner name from the entered name (via the dedicated owner-name path so it
             // isn't later clobbered by the Setup/Settings form), and the business name if given.
@@ -124,8 +138,18 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun signOut() {
-        runCatching { client.auth.signOut() }
+    override suspend fun signOut(): DataResult<Unit> = try {
+        client.auth.signOut()
+        clearSessionData()
+        DataResult.Success(Unit)
+    } catch (t: Throwable) {
+        DataResult.Failure(mapAuthError(t))
+    }
+
+    private fun clearSessionData() {
+        profileRepository.clearCache()
+        inventoryRepository.clearCache()
+        salesRepository.clearCache()
     }
 
     private fun mapAuthError(t: Throwable): AppError {

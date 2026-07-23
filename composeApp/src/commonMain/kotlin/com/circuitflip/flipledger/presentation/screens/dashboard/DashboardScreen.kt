@@ -115,6 +115,13 @@ fun DashboardScreen(onAddDevice: () -> Unit, onSeeAllSales: () -> Unit, onOpenDe
                 }
             }
             // Attention needed
+            state.error?.let { message ->
+                item {
+                    FlipCard {
+                        Text(message, style = FlipTheme.typography.bodyM, color = colors.error)
+                    }
+                }
+            }
             if (state.attention.isNotEmpty()) {
                 item { Text("Attention needed", style = FlipTheme.typography.headingM, color = colors.textDefault) }
                 items(state.attention) { attn -> AttentionRow(attn) { attn.deviceId?.let(onOpenDevice) } }
@@ -176,4 +183,3 @@ private fun RecentSaleRow(sale: Sale) {
         }
     }
 }
-

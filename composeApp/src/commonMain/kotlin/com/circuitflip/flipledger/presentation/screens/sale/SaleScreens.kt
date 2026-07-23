@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -38,7 +38,7 @@ fun Sale1Screen(vm: SaleViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
     SaleShell(1, "Record the sale", s.device?.let { "Invested ${Money.format(it.investedCents)}" }, onContinue, onBack, showBack = false) {
         FlipTextField(s.draft.price, vm::setPrice, "Sale price", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true)
         Spacer(Modifier.height(16.dp))
-        FlipTextField(s.draft.date, vm::setDate, "Sale date", placeholder = "Jul 12, 2026")
+        FlipTextField(s.draft.date, vm::setDate, "Sale date", placeholder = "YYYY-MM-DD")
         Spacer(Modifier.height(20.dp))
         FieldLabel("Sales channel")
         ChipGroup(SalesChannel.entries, s.draft.channel, { it.label }, vm::setChannel)
@@ -91,9 +91,13 @@ fun Sale3Screen(vm: SaleViewModel, onComplete: () -> Unit, onBack: () -> Unit) {
                         Text(label, style = FlipTheme.typography.bodyM, color = colors.textWeaker)
                         Text(value, style = FlipTheme.typography.headingS, color = color)
                     }
-                    if (i < breakdown.lastIndex) Divider(color = colors.borderDefault)
+                    if (i < breakdown.lastIndex) HorizontalDivider(color = colors.borderDefault)
                 }
             }
+        }
+        s.error?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(it, style = FlipTheme.typography.bodyS, color = colors.error)
         }
     }
 }

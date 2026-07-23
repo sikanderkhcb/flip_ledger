@@ -1,5 +1,6 @@
 package com.circuitflip.flipledger.presentation.screens.adddevice
 
+import com.circuitflip.flipledger.core.onFailure
 import com.circuitflip.flipledger.core.onSuccess
 import com.circuitflip.flipledger.domain.model.AcquisitionSource
 import com.circuitflip.flipledger.domain.model.DeviceCategory
@@ -33,7 +34,15 @@ class AddDeviceViewModel(
     private val _submitting = MutableStateFlow(false)
     val submitting = _submitting.asStateFlow()
 
-    fun start() { store.resetDeviceDraft(); _submitted.value = false; _submitting.value = false }
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
+
+    fun start() {
+        store.resetDeviceDraft()
+        _submitted.value = false
+        _submitting.value = false
+        _error.value = null
+    }
 
     fun setCategory(c: DeviceCategory) = store.updateDevice { it.copy(category = c) }
     fun setModel(v: String) = store.updateDevice { it.copy(model = v) }
@@ -48,12 +57,15 @@ class AddDeviceViewModel(
     fun submit() {
         if (_submitting.value) return
         _submitting.value = true
+        _error.value = null
         scope.launch {
-            addDevice(store.deviceDraft.value).onSuccess { device ->
-                store.lastAddedDeviceId = device.id
-                store.selectedDeviceId = device.id
-                _submitted.value = true
-            }
+            addDevice(store.deviceDraft.value)
+                .onSuccess { device ->
+                    store.lastAddedDeviceId = device.id
+                    store.selectedDeviceId = device.id
+                    _submitted.value = true
+                }
+                .onFailure { _error.value = it.userMessage() }
             _submitting.value = false
         }
     }

@@ -27,6 +27,15 @@ class WizardStore {
     fun resetCostDraft() { costDraft.value = CostDraft() }
     fun resetSaleDraft() { saleDraft.value = SaleDraft() }
 
+    fun clearSession() {
+        resetDeviceDraft()
+        resetCostDraft()
+        resetSaleDraft()
+        selectedDeviceId = null
+        lastAddedDeviceId = null
+        lastSale = null
+    }
+
     inline fun updateDevice(block: (DeviceDraft) -> DeviceDraft) { deviceDraft.value = block(deviceDraft.value) }
     inline fun updateCost(block: (CostDraft) -> CostDraft) { costDraft.value = block(costDraft.value) }
     inline fun updateSale(block: (SaleDraft) -> SaleDraft) { saleDraft.value = block(saleDraft.value) }

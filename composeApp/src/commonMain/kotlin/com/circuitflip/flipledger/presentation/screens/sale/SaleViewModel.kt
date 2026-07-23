@@ -1,5 +1,6 @@
 package com.circuitflip.flipledger.presentation.screens.sale
 
+import com.circuitflip.flipledger.core.onFailure
 import com.circuitflip.flipledger.core.onSuccess
 import com.circuitflip.flipledger.domain.model.Device
 import com.circuitflip.flipledger.domain.model.SaleDraft
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 data class SaleUiState(
@@ -22,6 +24,7 @@ data class SaleUiState(
     val previewNetProfitCents: Long = 0,
     val previewMargin: Double = 0.0,
     val completed: Boolean = false,
+    val error: String? = null,
 )
 
 /** Drives the 3-step Sale flow + live profit preview + completion. */
@@ -33,10 +36,14 @@ class SaleViewModel(
 
     private val _state = MutableStateFlow(SaleUiState())
     val state = _state.asStateFlow()
+    private var deviceJob: Job? = null
 
     fun start() {
+        deviceJob?.cancel()
         store.resetSaleDraft()
-        combine(
+        store.lastSale = null
+        _state.value = SaleUiState()
+        deviceJob = combine(
             inventoryRepositoryDeviceFlow(),
             store.saleDraft,
         ) { device, draft ->
@@ -45,9 +52,16 @@ class SaleViewModel(
                 draft = draft,
                 previewNetProfitCents = device?.let { ProfitCalculator.previewNetProfitCents(it, draft) } ?: 0,
                 previewMargin = device?.let { ProfitCalculator.previewMargin(it, draft) } ?: 0.0,
-                completed = _state.value.completed,
+                completed = false,
+                error = _state.value.error,
             )
         }.onEach { _state.value = it }.launchIn(scope)
+    }
+
+    fun reset() {
+        deviceJob?.cancel()
+        deviceJob = null
+        _state.value = SaleUiState()
     }
 
     private fun inventoryRepositoryDeviceFlow() =
@@ -70,11 +84,14 @@ class SaleViewModel(
         val device = _state.value.device ?: return
         if (_submitting.value) return
         _submitting.value = true
+        _state.value = _state.value.copy(error = null)
         scope.launch {
-            completeSale(device, store.saleDraft.value).onSuccess { sale ->
-                store.lastSale = sale
-                _state.value = _state.value.copy(completed = true)
-            }
+            completeSale(device, store.saleDraft.value)
+                .onSuccess { sale ->
+                    store.lastSale = sale
+                    _state.value = _state.value.copy(completed = true)
+                }
+                .onFailure { _state.value = _state.value.copy(error = it.userMessage()) }
             _submitting.value = false
         }
     }

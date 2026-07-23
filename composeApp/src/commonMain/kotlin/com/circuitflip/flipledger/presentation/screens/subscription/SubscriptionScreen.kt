@@ -34,7 +34,7 @@ import com.circuitflip.flipledger.presentation.theme.Radius
  * Plans are static content, so they live here rather than in a ViewModel.
  */
 @Composable
-fun SubscriptionScreen(onBack: () -> Unit, onStartTrial: () -> Unit) {
+fun SubscriptionScreen(onBack: () -> Unit) {
     val colors = FlipTheme.colors
     val plans = listOf(
         SubscriptionPlan("Free", "$0", listOf("Up to 10 active devices", "Basic profit tracking")),
@@ -50,11 +50,11 @@ fun SubscriptionScreen(onBack: () -> Unit, onStartTrial: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text("Upgrade your reseller workflow", style = FlipTheme.typography.headingXl, color = colors.textDefault)
-                Text("Pick a plan that fits how you flip.", style = FlipTheme.typography.bodyM, color = colors.textWeaker)
+                Text("Plan preview. In-app purchases are not configured yet.", style = FlipTheme.typography.bodyM, color = colors.textWeaker)
                 Spacer(Modifier.height(4.dp))
                 plans.forEach { plan -> PlanCard(plan) }
                 Spacer(Modifier.height(4.dp))
-                PrimaryButton(text = "Start Free Trial", onClick = onStartTrial)
+                PrimaryButton(text = "Purchases coming soon", onClick = {}, enabled = false)
             }
         }
     }

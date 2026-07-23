@@ -101,12 +101,22 @@ private fun AppNavHost(start: StartDestination) {
         val atEntry = navigator.current is Route.Splash ||
             navigator.current is Route.Welcome ||
             navigator.current is Route.Auth
-        if (atEntry) {
-            when (start) {
-                StartDestination.HOME -> navigator.resetTo(Route.Dashboard)
-                StartDestination.ONBOARDING -> navigator.resetTo(Route.Setup1)
-                StartDestination.AUTH, StartDestination.LOADING -> {}
+        when (start) {
+            StartDestination.AUTH -> {
+                store.clearSession()
+                saleVm.reset()
+                if (!atEntry) navigator.resetTo(Route.Welcome)
             }
+            StartDestination.HOME -> {
+                if (atEntry) navigator.resetTo(Route.Dashboard)
+            }
+            StartDestination.ONBOARDING -> {
+                if (atEntry) {
+                    setupVm.start()
+                    navigator.resetTo(Route.Setup1)
+                }
+            }
+            StartDestination.LOADING -> Unit
         }
     }
 
@@ -213,7 +223,6 @@ private fun AppNavHost(start: StartDestination) {
 
         Route.Subscription -> SubscriptionScreen(
             onBack = { navigator.back() },
-            onStartTrial = { navigator.back() },
         )
 
         Route.Settings -> SettingsScreen(

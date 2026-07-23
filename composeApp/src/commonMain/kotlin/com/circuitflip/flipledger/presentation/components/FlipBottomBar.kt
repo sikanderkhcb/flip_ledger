@@ -11,10 +11,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.MoreHoriz
-import androidx.compose.material.icons.rounded.ReceiptLong
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,7 +31,7 @@ import com.circuitflip.flipledger.presentation.theme.FlipTheme
 enum class BottomTab(val label: String, val icon: ImageVector) {
     HOME("Home", Icons.Rounded.Home),
     INVENTORY("Inventory", Icons.Rounded.Inventory2),
-    SALES("Sales", Icons.Rounded.ReceiptLong),
+    SALES("Sales", Icons.AutoMirrored.Rounded.ReceiptLong),
     MORE("More", Icons.Rounded.MoreHoriz),
 }
 

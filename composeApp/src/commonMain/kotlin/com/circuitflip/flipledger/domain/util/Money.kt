@@ -15,8 +15,14 @@ object Money {
 
     /** Parse a user-typed dollar string (e.g. "560", "1,050.50") into cents. */
     fun parseToCents(input: String): Long {
+        return parseToCentsOrNull(input) ?: 0L
+    }
+
+    /** Parses a monetary amount, returning null instead of silently treating malformed input as $0. */
+    fun parseToCentsOrNull(input: String): Long? {
         val cleaned = input.trim().replace(",", "").removePrefix("$")
-        val dollars = cleaned.toDoubleOrNull() ?: return 0L
+        if (!AMOUNT_PATTERN.matches(cleaned)) return null
+        val dollars = cleaned.toDoubleOrNull() ?: return null
         return (dollars * 100).roundToLong()
     }
 
@@ -46,6 +52,8 @@ object Money {
         }
         return sb.reverse().toString()
     }
+
+    private val AMOUNT_PATTERN = Regex("""\d+(?:\.\d{1,2})?""")
 }
 
 /** Format a 0.0..1.0 fraction as a whole-number percent, e.g. 0.324 -> "32%". */

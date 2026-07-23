@@ -1,5 +1,6 @@
 package com.circuitflip.flipledger.presentation.screens.devicedetail
 
+import com.circuitflip.flipledger.core.onFailure
 import com.circuitflip.flipledger.domain.model.Device
 import com.circuitflip.flipledger.domain.model.DeviceStatus
 import com.circuitflip.flipledger.domain.usecase.ObserveDeviceUseCase
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 data class DeviceDetailUiState(
     val device: Device? = null,
     val expectedProfitCents: Long = 0,
+    val error: String? = null,
 )
 
 class DeviceDetailViewModel(
@@ -37,6 +39,7 @@ class DeviceDetailViewModel(
             _state.value = DeviceDetailUiState(
                 device = device,
                 expectedProfitCents = device?.let { ProfitCalculator.expectedProfitCents(it) } ?: 0,
+                error = _state.value.error,
             )
         }.launchIn(scope)
     }
@@ -59,8 +62,10 @@ class DeviceDetailViewModel(
         val id = store.selectedDeviceId ?: return
         if (_submitting.value) return
         _submitting.value = true
+        _state.value = _state.value.copy(error = null)
         scope.launch {
             updateStatus(id, status)
+                .onFailure { _state.value = _state.value.copy(error = it.userMessage()) }
             _submitting.value = false
         }
     }

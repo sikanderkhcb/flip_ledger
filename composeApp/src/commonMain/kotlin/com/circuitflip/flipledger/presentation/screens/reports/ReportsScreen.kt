@@ -32,6 +32,7 @@ import com.circuitflip.flipledger.presentation.theme.FlipTheme
 fun ReportsScreen(onBack: () -> Unit) {
     val vm = rememberViewModel<ReportsViewModel>()
     val metrics by vm.metrics.collectAsState()
+    val error by vm.error.collectAsState()
     val colors = FlipTheme.colors
     val exportCsv = rememberCsvExporter()
 
@@ -43,10 +44,13 @@ fun ReportsScreen(onBack: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("July 2026 ▾", style = FlipTheme.typography.headingM, color = colors.textDefault)
-                    Text("Export", style = FlipTheme.typography.bodyM, color = colors.info)
+                    Text(vm.periodLabel, style = FlipTheme.typography.headingM, color = colors.textDefault)
+                    Text("Current month", style = FlipTheme.typography.bodyM, color = colors.textWeaker)
                 }
                 SectionLabel("SUMMARY")
+                error?.let {
+                    Text(it, style = FlipTheme.typography.bodyM, color = colors.error)
+                }
                 FlipCard {
                     if (metrics.isEmpty()) {
                         Text("No data for this period yet.", style = FlipTheme.typography.bodyM, color = colors.textWeaker)

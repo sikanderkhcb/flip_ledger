@@ -18,7 +18,7 @@ interface AuthRepository {
     suspend fun signUp(draft: AuthDraft): DataResult<Unit>
     suspend fun signInWithApple(identityToken: String): DataResult<Unit>
     suspend fun signInWithGoogle(identityToken: String): DataResult<Unit>
-    suspend fun signOut()
+    suspend fun signOut(): DataResult<Unit>
 
     /** Refreshes the profile's owner name from the signed-in user (metadata / email). */
     suspend fun syncProfileName()

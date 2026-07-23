@@ -1,13 +1,17 @@
 package com.circuitflip.flipledger.domain.repository
 
+import com.circuitflip.flipledger.core.AppError
 import com.circuitflip.flipledger.core.DataResult
 import com.circuitflip.flipledger.domain.model.Cost
 import com.circuitflip.flipledger.domain.model.Device
 import com.circuitflip.flipledger.domain.model.DeviceStatus
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
-/** Contract for reading/writing devices. Backed by SQLDelight with an offline-first policy. */
+/** Contract for reading/writing the authenticated user's devices. */
 interface InventoryRepository {
+    val error: StateFlow<AppError?>
+
     /** Reactive stream of the full inventory (excludes sold devices). */
     fun observeInventory(): Flow<List<Device>>
 
@@ -22,4 +26,10 @@ interface InventoryRepository {
     suspend fun addCost(deviceId: String, cost: Cost): DataResult<Unit>
 
     suspend fun deleteDevice(deviceId: String): DataResult<Unit>
+
+    /** Removes in-memory data when the authenticated session changes. */
+    fun clearCache()
+
+    /** Removes a device from the local view after an atomic server-side sale completes. */
+    fun removeCachedDevice(deviceId: String)
 }

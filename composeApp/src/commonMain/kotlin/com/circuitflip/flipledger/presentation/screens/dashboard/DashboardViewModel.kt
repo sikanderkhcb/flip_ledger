@@ -22,6 +22,7 @@ data class DashboardUiState(
     val metrics: DashboardMetrics? = null,
     val attention: List<AttentionItem> = emptyList(),
     val recentSales: List<Sale> = emptyList(),
+    val error: String? = null,
 )
 
 class DashboardViewModel(
@@ -40,13 +41,16 @@ class DashboardViewModel(
             observeInventory(),
             observeSales(),
             profileRepository.observeProfile(),
-        ) { inventory, sales, profile ->
+            observeInventory.error,
+            observeSales.error,
+        ) { inventory, sales, profile, inventoryError, salesError ->
             DashboardUiState(
                 loading = false,
                 profile = profile,
                 metrics = getMetrics(inventory, sales),
                 attention = getAttention(inventory),
                 recentSales = sales.take(3),
+                error = (inventoryError ?: salesError)?.userMessage(),
             )
         }.onEach { _state.value = it }.launchIn(scope)
     }

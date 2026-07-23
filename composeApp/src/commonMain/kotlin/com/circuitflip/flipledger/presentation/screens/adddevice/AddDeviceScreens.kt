@@ -65,7 +65,7 @@ fun AddDevice2Screen(vm: AddDeviceViewModel, onContinue: () -> Unit, onBack: () 
     WizardShell(2, "What did it cost you?", "This becomes the starting point for true profit.", onContinue = onContinue, onBack = onBack) {
         FlipTextField(d.price, vm::setPrice, "Purchase price", placeholder = "0", keyboardType = KeyboardType.Decimal, currencyPrefix = true)
         Spacer(Modifier.height(16.dp))
-        FlipTextField(d.date, vm::setDate, "Purchase date", placeholder = "Jul 12, 2026")
+        FlipTextField(d.date, vm::setDate, "Purchase date", placeholder = "YYYY-MM-DD")
         Spacer(Modifier.height(20.dp))
         FieldLabel("Source")
         ChipGroup(AcquisitionSource.entries, d.source, { it.label }, vm::setSource)
@@ -94,6 +94,7 @@ fun AddDevice3Screen(vm: AddDeviceViewModel, onContinue: () -> Unit, onBack: () 
 fun AddDevice4Screen(vm: AddDeviceViewModel, onEdit: () -> Unit, onBack: () -> Unit) {
     val d by vm.draft.collectAsState()
     val submitting by vm.submitting.collectAsState()
+    val error by vm.error.collectAsState()
     val rows = listOf(
         "Category" to (d.category?.label ?: "—"),
         "Model" to d.model.ifBlank { "—" },
@@ -110,11 +111,15 @@ fun AddDevice4Screen(vm: AddDeviceViewModel, onEdit: () -> Unit, onBack: () -> U
                     Text(label, style = FlipTheme.typography.bodyM, color = FlipTheme.colors.textWeaker)
                     Text(value, style = FlipTheme.typography.headingS, color = FlipTheme.colors.textDefault)
                 }
-                if (i < rows.lastIndex) androidx.compose.material3.Divider(color = FlipTheme.colors.borderDefault)
+                if (i < rows.lastIndex) androidx.compose.material3.HorizontalDivider(color = FlipTheme.colors.borderDefault)
             }
         }
         Spacer(Modifier.height(8.dp))
         LinkButton("Edit", onEdit, Modifier.fillMaxWidth())
+        error?.let {
+            Spacer(Modifier.height(8.dp))
+            Text(it, style = FlipTheme.typography.bodyS, color = FlipTheme.colors.error)
+        }
     }
 }
 

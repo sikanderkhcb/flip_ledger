@@ -1,5 +1,7 @@
 package com.circuitflip.flipledger.presentation.screens.addcost
 
+import com.circuitflip.flipledger.core.onFailure
+import com.circuitflip.flipledger.core.onSuccess
 import com.circuitflip.flipledger.domain.model.CostDraft
 import com.circuitflip.flipledger.domain.model.CostType
 import com.circuitflip.flipledger.domain.model.PaidBy
@@ -24,7 +26,15 @@ class AddCostViewModel(
     private val _submitting = MutableStateFlow(false)
     val submitting = _submitting.asStateFlow()
 
-    fun start() { store.resetCostDraft(); _saved.value = false; _submitting.value = false }
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
+
+    fun start() {
+        store.resetCostDraft()
+        _saved.value = false
+        _submitting.value = false
+        _error.value = null
+    }
 
     fun setType(t: CostType) = store.updateCost { it.copy(type = t) }
     fun setAmount(v: String) = store.updateCost { it.copy(amount = v.filter { c -> c.isDigit() || c == '.' }) }
@@ -36,9 +46,11 @@ class AddCostViewModel(
         val id = store.selectedDeviceId ?: return
         if (_submitting.value) return
         _submitting.value = true
+        _error.value = null
         scope.launch {
             addCost(id, store.costDraft.value)
-            _saved.value = true
+                .onSuccess { _saved.value = true }
+                .onFailure { _error.value = it.userMessage() }
             _submitting.value = false
         }
     }

@@ -1,9 +1,13 @@
 package com.circuitflip.flipledger.domain.repository
 
+import com.circuitflip.flipledger.core.AppError
 import com.circuitflip.flipledger.domain.model.BusinessProfile
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 interface ProfileRepository {
+    val error: StateFlow<AppError?>
+
     fun observeProfile(): Flow<BusinessProfile>
     suspend fun getProfile(): BusinessProfile
     suspend fun updateProfile(profile: BusinessProfile)
@@ -16,4 +20,7 @@ interface ProfileRepository {
 
     /** Marks onboarding complete so future launches skip straight to the dashboard. */
     suspend fun setOnboarded()
+
+    /** Removes in-memory profile data when the authenticated session changes. */
+    fun clearCache()
 }

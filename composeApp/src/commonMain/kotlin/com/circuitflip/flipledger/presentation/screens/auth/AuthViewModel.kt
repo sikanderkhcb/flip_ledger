@@ -44,16 +44,6 @@ class AuthViewModel(private val authRepository: AuthRepository) : BaseViewModel(
         }
     }
 
-    /** Apple sign-in (iOS) — still uses a placeholder token until the Apple provider is wired. */
-    fun signInWithApple() {
-        _state.update { it.copy(loading = true) }
-        scope.launch {
-            authRepository.signInWithApple("demo-apple-token")
-                .onSuccess { _state.update { it.copy(loading = false, success = true) } }
-                .onFailure { err -> _state.update { it.copy(loading = false, error = err.userMessage()) } }
-        }
-    }
-
     /** Exchanges a real Google ID token (from Credential Manager) for a Supabase session. */
     fun signInWithGoogleToken(idToken: String) {
         _state.update { it.copy(loading = true) }

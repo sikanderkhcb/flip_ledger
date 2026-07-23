@@ -83,8 +83,6 @@ fun SettingsScreen(
 
                 SectionLabel("WORKSPACE")
                 FlipCard(padding = 0.dp) {
-                    SettingsRow("Workspace", colors.accentLoyaltyBlue, onClick = {})
-                    Divider()
                     if (state.profile.workspaceType == WorkspaceType.PARTNER) {
                         SettingsRow("Partner settlement", colors.accentLilac, onClick = onOpenSettlement)
                         Divider()
@@ -112,15 +110,11 @@ fun SettingsScreen(
                     }
                 }
 
-                SectionLabel("ACCOUNT")
-                FlipCard(padding = 0.dp) {
-                    SettingsRow("Help", colors.backgroundMuted, onClick = {})
-                    Divider()
-                    SettingsRow("Privacy", colors.backgroundMuted, onClick = {})
-                }
-
                 Spacer(Modifier.height(4.dp))
                 LinkButton(text = "Sign out", onClick = { showSignOutConfirm = true }, modifier = Modifier.fillMaxWidth())
+                state.error?.let {
+                    Text(it, style = FlipTheme.typography.bodyS, color = colors.error)
+                }
             }
         }
 

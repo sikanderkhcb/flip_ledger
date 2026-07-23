@@ -26,9 +26,9 @@ val coreModule = module {
     single<SupabaseClient> { createFlipLedgerSupabaseClient() }
 
     // Repositories
-    single<ProfileRepository> { ProfileRepositoryImpl(get(), get(), get(named("io"))) }
+    single<ProfileRepository> { ProfileRepositoryImpl(get(), get(named("io"))) }
     single<InventoryRepository> { InventoryRepositoryImpl(get(), get(named("io"))) }
-    single<SalesRepository> { SalesRepositoryImpl(get(), get(named("io"))) }
+    single<SalesRepository> { SalesRepositoryImpl(get(), get(), get(named("io"))) }
     single<ThemeRepository> { ThemeRepositoryImpl(get()) }
-    single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
+    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get(), get()) }
 }
