@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -29,6 +30,8 @@ import flipledger.composeapp.generated.resources.flip_ledger_logo_transparent
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 
+private const val MINIMUM_SPLASH_DURATION_MS = 1_100L
+
 /** Branded startup state shown while the persisted session is restored. */
 @Composable
 fun SplashScreen(
@@ -38,7 +41,10 @@ fun SplashScreen(
     var minimumDisplayElapsed by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        delay(650)
+        // Start the visible-duration clock only after Compose can present this screen.
+        // Cold iOS launches may otherwise spend the whole delay showing a cached app snapshot.
+        withFrameNanos { }
+        delay(MINIMUM_SPLASH_DURATION_MS)
         minimumDisplayElapsed = true
     }
     LaunchedEffect(isReady, minimumDisplayElapsed) {
