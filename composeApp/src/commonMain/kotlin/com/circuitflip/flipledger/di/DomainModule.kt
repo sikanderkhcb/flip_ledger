@@ -17,7 +17,7 @@ import org.koin.dsl.module
 val domainModule = module {
     factory { ObserveInventoryUseCase(get()) }
     factory { ObserveDeviceUseCase(get()) }
-    factory { AddDeviceUseCase(get()) }
+    factory { AddDeviceUseCase(get(), get()) }
     factory { UpdateDeviceStatusUseCase(get()) }
     factory { AddCostUseCase(get()) }
     factory { ObserveSalesUseCase(get()) }

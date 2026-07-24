@@ -1,5 +1,6 @@
 package com.circuitflip.flipledger.presentation.screens.settings
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Switch
@@ -30,21 +30,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import com.circuitflip.flipledger.domain.model.WorkspaceType
 import com.circuitflip.flipledger.presentation.components.FlipCard
+import com.circuitflip.flipledger.presentation.components.FlipTopBar
 import com.circuitflip.flipledger.presentation.components.IconBlob
 import com.circuitflip.flipledger.presentation.components.LinkButton
 import com.circuitflip.flipledger.presentation.components.SectionLabel
 import com.circuitflip.flipledger.presentation.rememberViewModel
 import com.circuitflip.flipledger.presentation.theme.FlipTheme
+import flipledger.composeapp.generated.resources.Res
+import flipledger.composeapp.generated.resources.export_reports_icon
+import flipledger.composeapp.generated.resources.subscription_icon
+import org.jetbrains.compose.resources.painterResource
 
 /** 24 · Settings — profile header, workspace/partner/export rows, theme toggle, sign out. */
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     onOpenSettlement: () -> Unit,
     onOpenReports: () -> Unit,
     onOpenSubscription: () -> Unit,
@@ -61,9 +66,16 @@ fun SettingsScreen(
         Column(
             Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()),
         ) {
-            Spacer(Modifier.height(24.dp))
-            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("More", style = FlipTheme.typography.headingXl, color = colors.textDefault)
+            if (onBack != null) {
+                FlipTopBar(title = "More", onBack = onBack)
+            } else {
+                Spacer(Modifier.height(24.dp))
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("More", style = FlipTheme.typography.headingXl, color = colors.textDefault)
+                }
             }
             Spacer(Modifier.height(16.dp))
             Column(Modifier.padding(20.dp, 0.dp, 20.dp, 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -87,18 +99,30 @@ fun SettingsScreen(
                         SettingsRow("Partner settlement", colors.accentLilac, onClick = onOpenSettlement)
                         Divider()
                     }
-                    SettingsRow("Export & reports", colors.accentAmberLight, onClick = onOpenReports)
+                    SettingsRow(
+                        label = "Export & reports",
+                        iconColor = colors.accentLilac,
+                        iconPainter = painterResource(Res.drawable.export_reports_icon),
+                        onClick = onOpenReports,
+                    )
                     Divider()
-                    SettingsRow("Subscription", colors.accentCream, onClick = onOpenSubscription)
+                    SettingsRow(
+                        label = "Subscription",
+                        iconColor = colors.accentAmber,
+                        iconPainter = painterResource(Res.drawable.subscription_icon),
+                        onClick = onOpenSubscription,
+                    )
                 }
 
                 SectionLabel("PREFERENCES")
                 FlipCard {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("Dark theme", style = FlipTheme.typography.headingS, color = colors.textDefault)
-                            Text(if (state.isDark) "rp-new-dark" else "loft (light)", style = FlipTheme.typography.bodyS, color = colors.textWeaker)
-                        }
+                        Text(
+                            "Dark theme",
+                            style = FlipTheme.typography.headingS,
+                            color = colors.textDefault,
+                            modifier = Modifier.weight(1f),
+                        )
                         Switch(
                             checked = state.isDark,
                             onCheckedChange = { vm.toggleTheme() },
@@ -147,13 +171,26 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SettingsRow(label: String, iconColor: Color, onClick: () -> Unit) {
+private fun SettingsRow(
+    label: String,
+    iconColor: Color,
+    iconPainter: Painter? = null,
+    onClick: () -> Unit,
+) {
     val colors = FlipTheme.colors
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconBlob(color = iconColor, size = 32.dp)
+        IconBlob(color = iconColor, size = 32.dp) {
+            iconPainter?.let {
+                Image(
+                    painter = it,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
         Spacer(Modifier.size(12.dp))
         Text(label, style = FlipTheme.typography.bodyL, color = colors.textDefault, modifier = Modifier.weight(1f))
         Text("›", style = FlipTheme.typography.headingS, color = colors.textWeakest)

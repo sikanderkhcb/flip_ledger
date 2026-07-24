@@ -13,6 +13,8 @@ import com.circuitflip.flipledger.domain.model.LockStatus
 import com.circuitflip.flipledger.domain.model.PaidBy
 import com.circuitflip.flipledger.domain.model.Sale
 import com.circuitflip.flipledger.domain.model.SalesChannel
+import com.circuitflip.flipledger.domain.model.SubscriptionAccess
+import com.circuitflip.flipledger.domain.model.SubscriptionStatus
 import com.circuitflip.flipledger.domain.model.WorkspaceType
 import com.circuitflip.flipledger.domain.util.Dates
 import kotlinx.serialization.EncodeDefault
@@ -82,6 +84,17 @@ data class ProfileDto(
     val onboarded: Boolean = false,
 )
 
+@Serializable
+data class BillingAccountDto(
+    @SerialName("lifetime_devices_created") val lifetimeDevicesCreated: Int = 0,
+    @SerialName("subscription_status") val subscriptionStatus: String = "free",
+    @SerialName("current_period_end") val currentPeriodEnd: String? = null,
+    @SerialName("cancel_at_period_end") val cancelAtPeriodEnd: Boolean = false,
+)
+
+@Serializable
+data class BillingUrlResponse(val url: String)
+
 // ---- DTO → domain --------------------------------------------------------
 
 fun DeviceDto.toDomain(costs: List<Cost>): Device = Device(
@@ -129,6 +142,13 @@ fun ProfileDto.toDomain(): BusinessProfile = BusinessProfile(
     splitYou = splitYou,
     currency = Currency.fromCode(currency),
     categoryPref = categoryPref,
+)
+
+fun BillingAccountDto.toDomain(): SubscriptionAccess = SubscriptionAccess(
+    status = SubscriptionStatus.fromWire(subscriptionStatus),
+    lifetimeDevicesCreated = lifetimeDevicesCreated,
+    currentPeriodEnd = currentPeriodEnd,
+    cancelAtPeriodEnd = cancelAtPeriodEnd,
 )
 
 // ---- domain → DTO --------------------------------------------------------

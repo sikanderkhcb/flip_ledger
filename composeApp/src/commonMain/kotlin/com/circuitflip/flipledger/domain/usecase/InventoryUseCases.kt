@@ -8,6 +8,7 @@ import com.circuitflip.flipledger.domain.model.DeviceDraft
 import com.circuitflip.flipledger.domain.model.DeviceStatus
 import com.circuitflip.flipledger.domain.model.LockStatus
 import com.circuitflip.flipledger.domain.repository.InventoryRepository
+import com.circuitflip.flipledger.domain.repository.SubscriptionRepository
 import com.circuitflip.flipledger.domain.util.Dates
 import com.circuitflip.flipledger.domain.util.FormValidation
 import com.circuitflip.flipledger.domain.util.Ids
@@ -28,7 +29,10 @@ class ObserveDeviceUseCase(private val repo: InventoryRepository) {
  * Converts a completed [DeviceDraft] into a persisted [Device]. Applies the same defaulting
  * rules as the reference design (masked identifier, "Untitled device", etc.).
  */
-class AddDeviceUseCase(private val repo: InventoryRepository) {
+class AddDeviceUseCase(
+    private val repo: InventoryRepository,
+    private val subscriptionRepository: SubscriptionRepository,
+) {
     suspend operator fun invoke(draft: DeviceDraft): DataResult<Device> {
         FormValidation.firstError(FormValidation.device(draft))?.let {
             return DataResult.Failure(it)
@@ -57,7 +61,9 @@ class AddDeviceUseCase(private val repo: InventoryRepository) {
             status = DeviceStatus.PURCHASED,
             daysHeld = Dates.daysBetween(purchaseDate.toString()) ?: 0,
         )
-        return repo.addDevice(device)
+        val result = repo.addDevice(device)
+        if (result is DataResult.Success) subscriptionRepository.recordDeviceAdded()
+        return result
     }
 }
 

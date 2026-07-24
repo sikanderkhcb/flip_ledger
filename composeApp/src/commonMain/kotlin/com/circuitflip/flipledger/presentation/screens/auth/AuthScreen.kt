@@ -35,8 +35,8 @@ import com.circuitflip.flipledger.presentation.rememberViewModel
 import com.circuitflip.flipledger.presentation.theme.FlipTheme
 
 /**
- * 03 · Sign In and 03b · Sign Up. Sign Up shows extra fields (name, phone, business name).
- * On success navigates to onboarding (setup).
+ * 03 · Sign In and 03b · Sign Up. Sign Up asks only for account credentials; business
+ * details are collected progressively during onboarding.
  */
 @Composable
 fun AuthScreen(signUp: Boolean, onBack: () -> Unit, onAuthenticated: () -> Unit, onToggleMode: (Boolean) -> Unit) {
@@ -55,7 +55,7 @@ fun AuthScreen(signUp: Boolean, onBack: () -> Unit, onAuthenticated: () -> Unit,
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                if (signUp) "Just a few details to set up your reseller workspace."
+                if (signUp) "Track up to 10 device records free. Upgrade to unlimited for $10/month when you need it."
                 else "Sign in to keep tracking your inventory and profit.",
                 style = FlipTheme.typography.bodyL, color = FlipTheme.colors.textWeaker,
             )
@@ -118,25 +118,6 @@ fun AuthScreen(signUp: Boolean, onBack: () -> Unit, onAuthenticated: () -> Unit,
                 isPassword = true,
                 error = state.fieldErrors["password"],
             )
-            if (signUp) {
-                Spacer(Modifier.height(16.dp))
-                FlipTextField(
-                    state.draft.phone,
-                    vm::onPhone,
-                    "Phone",
-                    placeholder = "(555) 123-4567",
-                    keyboardType = KeyboardType.Phone,
-                    error = state.fieldErrors["phone"],
-                )
-                Spacer(Modifier.height(16.dp))
-                FlipTextField(
-                    state.draft.businessName,
-                    vm::onBusinessName,
-                    "Business name (if any)",
-                    placeholder = "e.g. Circuit Flip Co.",
-                    error = state.fieldErrors["businessName"],
-                )
-            }
             state.error?.let {
                 Spacer(Modifier.height(12.dp))
                 Text(it, style = FlipTheme.typography.bodyS, color = FlipTheme.colors.error)
@@ -144,7 +125,7 @@ fun AuthScreen(signUp: Boolean, onBack: () -> Unit, onAuthenticated: () -> Unit,
             Spacer(Modifier.height(16.dp))
         }
         Column(Modifier.padding(24.dp)) {
-            PrimaryButton(if (signUp) "Create Account" else "Sign In", vm::submit, loading = state.loading)
+            PrimaryButton(if (signUp) "Create Free Account" else "Sign In", vm::submit, loading = state.loading)
             Spacer(Modifier.height(4.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                 Text(if (signUp) "Already have an account?" else "Don't have an account?", style = FlipTheme.typography.bodyM, color = FlipTheme.colors.textWeaker)

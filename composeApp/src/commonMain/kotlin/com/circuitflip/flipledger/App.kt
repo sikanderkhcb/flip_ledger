@@ -1,5 +1,6 @@
 package com.circuitflip.flipledger
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,8 @@ import com.circuitflip.flipledger.presentation.components.FlipBottomBar
 import com.circuitflip.flipledger.presentation.navigation.Navigator
 import com.circuitflip.flipledger.presentation.navigation.Route
 import com.circuitflip.flipledger.presentation.navigation.SystemBackHandler
+import com.circuitflip.flipledger.presentation.navigation.navigationTransform
+import com.circuitflip.flipledger.presentation.navigation.prefersReducedMotion
 import com.circuitflip.flipledger.presentation.rememberViewModel
 import com.circuitflip.flipledger.presentation.screens.addcost.AddCostScreen
 import com.circuitflip.flipledger.presentation.screens.addcost.AddCostViewModel
@@ -47,6 +50,7 @@ import com.circuitflip.flipledger.presentation.screens.setup.Setup3Screen
 import com.circuitflip.flipledger.presentation.screens.setup.SetupViewModel
 import com.circuitflip.flipledger.presentation.screens.splash.SplashScreen
 import com.circuitflip.flipledger.presentation.screens.subscription.SubscriptionScreen
+import com.circuitflip.flipledger.presentation.screens.subscription.SubscriptionViewModel
 import com.circuitflip.flipledger.presentation.screens.welcome.WelcomeScreen
 import com.circuitflip.flipledger.presentation.theme.FlipLedgerTheme
 import com.circuitflip.flipledger.presentation.theme.FlipTheme
@@ -79,12 +83,29 @@ private fun AppNavHost(start: StartDestination) {
     val koin = getKoin()
     val navigator = remember { Navigator(start = Route.Splash) }
     val store = remember { koin.get<WizardStore>() }
+    val reduceMotion = prefersReducedMotion()
 
     // Shared flow ViewModels — one instance for the whole session.
     val setupVm = rememberViewModel<SetupViewModel>()
     val addDeviceVm = rememberViewModel<AddDeviceViewModel>()
     val saleVm = rememberViewModel<SaleViewModel>()
     val addCostVm = rememberViewModel<AddCostViewModel>()
+    val subscriptionVm = rememberViewModel<SubscriptionViewModel>()
+    val subscriptionState by subscriptionVm.state.collectAsState()
+
+    val openAddDevice: () -> Unit = {
+        subscriptionVm.requestAddDevice(
+            onAllowed = {
+                addDeviceVm.start()
+                navigator.push(Route.AddDevice1)
+            },
+            onLimitReached = {
+                if (navigator.current != Route.Subscription) {
+                    navigator.push(Route.Subscription)
+                }
+            },
+        )
+    }
 
     // Add-device submit and sale completion resolve asynchronously; advance when they land.
     val added by addDeviceVm.submitted.collectAsState()
@@ -108,10 +129,12 @@ private fun AppNavHost(start: StartDestination) {
                 if (!atEntry) navigator.resetTo(Route.Welcome)
             }
             StartDestination.HOME -> {
-                if (atEntry) navigator.resetTo(Route.Dashboard)
+                if (atEntry && navigator.current !is Route.Splash) {
+                    navigator.resetTo(Route.Dashboard)
+                }
             }
             StartDestination.ONBOARDING -> {
-                if (atEntry) {
+                if (atEntry && navigator.current !is Route.Splash) {
                     setupVm.start()
                     navigator.resetTo(Route.Setup1)
                 }
@@ -135,8 +158,32 @@ private fun AppNavHost(start: StartDestination) {
 
     Column(Modifier.fillMaxSize()) {
       Box(Modifier.weight(1f)) {
-        when (val route = navigator.current) {
-        Route.Splash -> SplashScreen(onContinue = { navigator.replace(Route.Welcome) })
+        AnimatedContent(
+            targetState = navigator.current,
+            transitionSpec = {
+                navigationTransform(
+                    direction = navigator.direction,
+                    reduceMotion = reduceMotion,
+                )
+            },
+            modifier = Modifier.fillMaxSize(),
+            label = "Screen navigation",
+        ) { route ->
+          when (route) {
+        Route.Splash -> SplashScreen(
+            isReady = start != StartDestination.LOADING,
+            onFinished = {
+                when (start) {
+                    StartDestination.AUTH -> navigator.replace(Route.Welcome)
+                    StartDestination.HOME -> navigator.resetTo(Route.Dashboard)
+                    StartDestination.ONBOARDING -> {
+                        setupVm.start()
+                        navigator.resetTo(Route.Setup1)
+                    }
+                    StartDestination.LOADING -> Unit
+                }
+            },
+        )
 
         Route.Welcome -> WelcomeScreen(
             onGetStarted = { navigator.push(Route.Auth(signUp = true)) },
@@ -161,14 +208,17 @@ private fun AppNavHost(start: StartDestination) {
         Route.Setup3 -> Setup3Screen(setupVm, onFinish = { navigator.resetTo(Route.Dashboard) }, onBack = { navigator.back() })
 
         Route.Dashboard -> DashboardScreen(
-            onAddDevice = { addDeviceVm.start(); navigator.push(Route.AddDevice1) },
+            subscriptionAccess = subscriptionState.access,
+            onAddDevice = openAddDevice,
             onSeeAllSales = { navigator.push(Route.SalesHistory) },
             onOpenDevice = { id -> navigator.push(Route.DeviceDetail(id)) },
             onOpenSettings = { navigator.push(Route.Settings) },
+            onOpenSubscription = { navigator.push(Route.Subscription) },
         )
 
         Route.Inventory -> InventoryScreen(
-            onAddDevice = { addDeviceVm.start(); navigator.push(Route.AddDevice1) },
+            subscriptionAccess = subscriptionState.access,
+            onAddDevice = openAddDevice,
             onOpenDevice = { id -> navigator.push(Route.DeviceDetail(id)) },
         )
 
@@ -204,7 +254,10 @@ private fun AppNavHost(start: StartDestination) {
                     if (id != null) { navigator.resetTo(Route.Dashboard); navigator.push(Route.DeviceDetail(id)); addCostVm.start(); navigator.push(Route.AddCost) }
                     else navigator.resetTo(Route.Dashboard)
                 },
-                onAddAnother = { addDeviceVm.start(); navigator.resetTo(Route.Dashboard); navigator.push(Route.AddDevice1) },
+                onAddAnother = {
+                    navigator.resetTo(Route.Dashboard)
+                    openAddDevice()
+                },
             )
         }
 
@@ -232,12 +285,15 @@ private fun AppNavHost(start: StartDestination) {
         Route.SaleComplete -> SaleCompleteScreen(
             sale = store.lastSale,
             onViewSales = { navigator.resetTo(Route.Dashboard); navigator.push(Route.SalesHistory) },
-            onAddAnother = { addDeviceVm.start(); navigator.resetTo(Route.Dashboard); navigator.push(Route.AddDevice1) },
+            onAddAnother = {
+                navigator.resetTo(Route.Dashboard)
+                openAddDevice()
+            },
             onDashboard = { navigator.resetTo(Route.Dashboard) },
         )
 
         Route.SalesHistory -> SalesHistoryScreen(
-            onBack = { navigator.back() },
+            onBack = if (navigator.canGoBack) navigator::back else null,
             onOpenSettlement = { navigator.push(Route.Settlement) },
         )
 
@@ -246,16 +302,18 @@ private fun AppNavHost(start: StartDestination) {
         Route.Reports -> ReportsScreen(onBack = { navigator.back() })
 
         Route.Subscription -> SubscriptionScreen(
+            vm = subscriptionVm,
             onBack = { navigator.back() },
         )
 
         Route.Settings -> SettingsScreen(
-            onBack = { navigator.back() },
+            onBack = if (navigator.canGoBack) navigator::back else null,
             onOpenSettlement = { navigator.push(Route.Settlement) },
             onOpenReports = { navigator.push(Route.Reports) },
             onOpenSubscription = { navigator.push(Route.Subscription) },
             onSignedOut = { navigator.resetTo(Route.Welcome) },
         )
+          }
         }
       }
       activeTab?.let { tab ->

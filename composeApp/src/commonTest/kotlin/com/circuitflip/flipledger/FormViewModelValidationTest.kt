@@ -13,12 +13,14 @@ import com.circuitflip.flipledger.domain.model.DeviceStatus
 import com.circuitflip.flipledger.domain.model.LockStatus
 import com.circuitflip.flipledger.domain.model.Sale
 import com.circuitflip.flipledger.domain.model.SalesChannel
+import com.circuitflip.flipledger.domain.model.SubscriptionAccess
 import com.circuitflip.flipledger.domain.model.WorkspaceType
 import com.circuitflip.flipledger.domain.repository.AuthRepository
 import com.circuitflip.flipledger.domain.repository.InventoryRepository
 import com.circuitflip.flipledger.domain.repository.ProfileRepository
 import com.circuitflip.flipledger.domain.repository.SalesRepository
 import com.circuitflip.flipledger.domain.repository.SessionState
+import com.circuitflip.flipledger.domain.repository.SubscriptionRepository
 import com.circuitflip.flipledger.domain.usecase.AddCostUseCase
 import com.circuitflip.flipledger.domain.usecase.AddDeviceUseCase
 import com.circuitflip.flipledger.domain.usecase.CompleteSaleUseCase
@@ -80,7 +82,10 @@ class FormViewModelValidationTest {
     @Test
     fun addDeviceWizardBlocksEachInvalidStep() = runTest(dispatcher) {
         val store = WizardStore()
-        val viewModel = AddDeviceViewModel(store, AddDeviceUseCase(FakeInventoryRepository()))
+        val viewModel = AddDeviceViewModel(
+            store,
+            AddDeviceUseCase(FakeInventoryRepository(), FakeSubscriptionRepository()),
+        )
         viewModel.start()
 
         assertFalse(viewModel.validateStep(1))
@@ -220,6 +225,22 @@ private class FakeSalesRepository : SalesRepository {
     override suspend fun recordSale(sale: Sale, soldDeviceId: String): DataResult<Sale> =
         DataResult.Success(sale)
     override fun clearCache() = Unit
+}
+
+private class FakeSubscriptionRepository : SubscriptionRepository {
+    private val access = MutableStateFlow(SubscriptionAccess())
+    override fun observeAccess(): Flow<SubscriptionAccess> = access
+    override suspend fun refresh() = DataResult.Success(access.value)
+    override suspend fun createCheckoutSession() = DataResult.Success("https://example.com/checkout")
+    override suspend fun createPortalSession() = DataResult.Success("https://example.com/portal")
+    override fun recordDeviceAdded() {
+        access.value = access.value.copy(
+            lifetimeDevicesCreated = access.value.lifetimeDevicesCreated + 1,
+        )
+    }
+    override fun clearCache() {
+        access.value = SubscriptionAccess()
+    }
 }
 
 private class CountingProfileRepository : ProfileRepository {

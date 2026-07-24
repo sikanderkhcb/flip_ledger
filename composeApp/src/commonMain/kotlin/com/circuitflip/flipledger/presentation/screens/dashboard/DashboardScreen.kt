@@ -39,6 +39,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.circuitflip.flipledger.domain.model.AttentionItem
 import com.circuitflip.flipledger.domain.model.Sale
+import com.circuitflip.flipledger.domain.model.FREE_DEVICE_LIMIT
+import com.circuitflip.flipledger.domain.model.SubscriptionAccess
 import com.circuitflip.flipledger.domain.util.Money
 import com.circuitflip.flipledger.domain.util.toPercentLabel
 import com.circuitflip.flipledger.presentation.components.FlipCard
@@ -49,7 +51,14 @@ import com.circuitflip.flipledger.presentation.theme.FlipTheme
 
 /** 07 · Dashboard — greeting, hero profit card, metric grid, attention items, recent sales, FAB. */
 @Composable
-fun DashboardScreen(onAddDevice: () -> Unit, onSeeAllSales: () -> Unit, onOpenDevice: (String) -> Unit, onOpenSettings: () -> Unit) {
+fun DashboardScreen(
+    subscriptionAccess: SubscriptionAccess,
+    onAddDevice: () -> Unit,
+    onSeeAllSales: () -> Unit,
+    onOpenDevice: (String) -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenSubscription: () -> Unit,
+) {
     val vm = rememberViewModel<DashboardViewModel>()
     val state by vm.state.collectAsState()
     val colors = FlipTheme.colors
@@ -80,6 +89,30 @@ fun DashboardScreen(onAddDevice: () -> Unit, onSeeAllSales: () -> Unit, onOpenDe
                         if (state.profile.ownerName.isBlank()) greeting else "$greeting, ${state.profile.ownerName}",
                         style = FlipTheme.typography.headingXl, color = colors.textDefault, modifier = Modifier.weight(1f),
                     )
+                }
+            }
+            if (
+                !subscriptionAccess.isUnlimited &&
+                subscriptionAccess.lifetimeDevicesCreated >= FREE_DEVICE_LIMIT - 2
+            ) {
+                item {
+                    FlipCard(onClick = onOpenSubscription) {
+                        Text(
+                            "${subscriptionAccess.lifetimeDevicesCreated.coerceAtMost(FREE_DEVICE_LIMIT)} of $FREE_DEVICE_LIMIT free device flips used",
+                            style = FlipTheme.typography.headingS,
+                            color = colors.textDefault,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            if (subscriptionAccess.remainingFreeDevices == 0) {
+                                "Upgrade to add another device."
+                            } else {
+                                "${subscriptionAccess.remainingFreeDevices} free device ${if (subscriptionAccess.remainingFreeDevices == 1) "flip" else "flips"} remaining."
+                            },
+                            style = FlipTheme.typography.bodyM,
+                            color = colors.textWeaker,
+                        )
+                    }
                 }
             }
             // Hero month-profit card

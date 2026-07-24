@@ -11,6 +11,7 @@ sealed class AppError(open val cause: Throwable? = null) {
     data class Unauthorized(val reason: String? = null) : AppError()
     data class NotFound(val what: String) : AppError()
     data class Validation(val field: String, val message: String) : AppError()
+    data object SubscriptionRequired : AppError()
     data class Storage(override val cause: Throwable? = null) : AppError(cause)
     data class Unknown(override val cause: Throwable? = null) : AppError(cause)
 
@@ -20,6 +21,7 @@ sealed class AppError(open val cause: Throwable? = null) {
         is Unauthorized -> reason ?: "Your session expired. Please sign in again."
         is NotFound -> "We couldn't find that $what."
         is Validation -> message
+        SubscriptionRequired -> "You've used all 10 free device slots. Upgrade to add more."
         is Storage -> "Something went wrong saving your data. Please try again."
         is Unknown -> "Something went wrong. Please try again."
     }
@@ -27,7 +29,13 @@ sealed class AppError(open val cause: Throwable? = null) {
     companion object {
         fun from(t: Throwable): AppError = when (t) {
             is IOException -> Network(t)
-            else -> Unknown(t)
+            else -> {
+                if (t.message?.contains("FREE_DEVICE_LIMIT_REACHED", ignoreCase = true) == true) {
+                    SubscriptionRequired
+                } else {
+                    Unknown(t)
+                }
+            }
         }
     }
 }

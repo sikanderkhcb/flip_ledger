@@ -31,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.circuitflip.flipledger.domain.model.DeviceStatus
+import com.circuitflip.flipledger.domain.model.FREE_DEVICE_LIMIT
+import com.circuitflip.flipledger.domain.model.SubscriptionAccess
 import com.circuitflip.flipledger.domain.util.Money
 import com.circuitflip.flipledger.presentation.components.DeviceRow
 import com.circuitflip.flipledger.presentation.components.SelectableChip
@@ -39,7 +41,11 @@ import com.circuitflip.flipledger.presentation.theme.FlipTheme
 
 /** 08 · Inventory — search, status filter chips, device list, invested total, FAB. */
 @Composable
-fun InventoryScreen(onAddDevice: () -> Unit, onOpenDevice: (String) -> Unit) {
+fun InventoryScreen(
+    subscriptionAccess: SubscriptionAccess,
+    onAddDevice: () -> Unit,
+    onOpenDevice: (String) -> Unit,
+) {
     val vm = rememberViewModel<InventoryViewModel>()
     val state by vm.state.collectAsState()
     val colors = FlipTheme.colors
@@ -50,6 +56,14 @@ fun InventoryScreen(onAddDevice: () -> Unit, onOpenDevice: (String) -> Unit) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Inventory", style = FlipTheme.typography.headingXl, color = colors.textDefault)
                 Text("Invested ${Money.format(state.totalInvestedCents)}", style = FlipTheme.typography.bodyM, color = colors.textWeaker)
+            }
+            if (!subscriptionAccess.isUnlimited) {
+                Text(
+                    "${subscriptionAccess.lifetimeDevicesCreated.coerceAtMost(FREE_DEVICE_LIMIT)} of $FREE_DEVICE_LIMIT free device flips used",
+                    style = FlipTheme.typography.caption,
+                    color = colors.textWeakest,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                )
             }
             Spacer(Modifier.height(16.dp))
             // Search box

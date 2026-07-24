@@ -16,6 +16,7 @@ import com.circuitflip.flipledger.presentation.screens.saleshistory.SalesHistory
 import com.circuitflip.flipledger.presentation.screens.settings.SettingsViewModel
 import com.circuitflip.flipledger.presentation.screens.settlement.SettlementViewModel
 import com.circuitflip.flipledger.presentation.screens.setup.SetupViewModel
+import com.circuitflip.flipledger.presentation.screens.subscription.SubscriptionViewModel
 import org.koin.dsl.module
 
 /**
@@ -39,4 +40,5 @@ val presentationModule = module {
     factory { SettlementViewModel(get(), get(), get()) }
     factory { ReportsViewModel(get(), get(), get()) }
     factory { SettingsViewModel(get(), get(), get()) }
+    factory { SubscriptionViewModel(get()) }
 }

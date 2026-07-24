@@ -5,11 +5,13 @@ import com.circuitflip.flipledger.data.repository.AuthRepositoryImpl
 import com.circuitflip.flipledger.data.repository.InventoryRepositoryImpl
 import com.circuitflip.flipledger.data.repository.ProfileRepositoryImpl
 import com.circuitflip.flipledger.data.repository.SalesRepositoryImpl
+import com.circuitflip.flipledger.data.repository.SubscriptionRepositoryImpl
 import com.circuitflip.flipledger.data.repository.ThemeRepositoryImpl
 import com.circuitflip.flipledger.domain.repository.AuthRepository
 import com.circuitflip.flipledger.domain.repository.InventoryRepository
 import com.circuitflip.flipledger.domain.repository.ProfileRepository
 import com.circuitflip.flipledger.domain.repository.SalesRepository
+import com.circuitflip.flipledger.domain.repository.SubscriptionRepository
 import com.circuitflip.flipledger.domain.repository.ThemeRepository
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +31,7 @@ val coreModule = module {
     single<ProfileRepository> { ProfileRepositoryImpl(get(), get(named("io"))) }
     single<InventoryRepository> { InventoryRepositoryImpl(get(), get(named("io"))) }
     single<SalesRepository> { SalesRepositoryImpl(get(), get(), get(named("io"))) }
+    single<SubscriptionRepository> { SubscriptionRepositoryImpl(get(), get(named("io"))) }
     single<ThemeRepository> { ThemeRepositoryImpl(get()) }
-    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get(), get()) }
+    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get(), get(), get()) }
 }

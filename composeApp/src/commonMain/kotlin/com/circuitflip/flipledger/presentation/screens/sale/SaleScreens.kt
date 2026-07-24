@@ -25,7 +25,7 @@ import com.circuitflip.flipledger.presentation.components.ChipGroup
 import com.circuitflip.flipledger.presentation.components.FieldLabel
 import com.circuitflip.flipledger.presentation.components.FlipCard
 import com.circuitflip.flipledger.presentation.components.FlipTextField
-import com.circuitflip.flipledger.presentation.components.LinkButton
+import com.circuitflip.flipledger.presentation.components.FlipTopBar
 import com.circuitflip.flipledger.presentation.components.PrimaryButton
 import com.circuitflip.flipledger.presentation.components.ScreenScaffold
 import com.circuitflip.flipledger.presentation.components.WizardHeader
@@ -35,7 +35,7 @@ import com.circuitflip.flipledger.presentation.theme.FlipTheme
 @Composable
 fun Sale1Screen(vm: SaleViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
     val s by vm.state.collectAsState()
-    SaleShell(1, "Record the sale", s.device?.let { "Invested ${Money.format(it.investedCents)}" }, onContinue, onBack, showBack = false) {
+    SaleShell(1, "Record the sale", s.device?.let { "Invested ${Money.format(it.investedCents)}" }, onContinue, onBack) {
         FlipTextField(
             s.draft.price,
             vm::setPrice,
@@ -129,19 +129,18 @@ private fun FieldError(message: String?) {
 @Composable
 private fun SaleShell(
     step: Int, title: String, subtitle: String?, onContinue: () -> Unit, onBack: () -> Unit,
-    continueLabel: String = "Continue", showBack: Boolean = true, loading: Boolean = false,
+    continueLabel: String = "Continue", loading: Boolean = false,
     body: @Composable () -> Unit,
 ) {
     ScreenScaffold {
+        FlipTopBar(title = "Record sale", onBack = onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp)) {
-            Spacer(Modifier.height(16.dp))
             WizardHeader(step, 3, title, subtitle)
             Spacer(Modifier.height(24.dp))
             body()
         }
         Column(Modifier.padding(24.dp)) {
             PrimaryButton(continueLabel, onContinue, loading = loading)
-            if (showBack) { Spacer(Modifier.height(4.dp)); LinkButton("Back", onBack, Modifier.fillMaxWidth()) }
         }
     }
 }

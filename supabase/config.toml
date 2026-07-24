@@ -1,0 +1,7 @@
+project_id = "flip-ledger"
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.stripe-return]
+verify_jwt = false
