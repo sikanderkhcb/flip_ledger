@@ -5,8 +5,10 @@ import com.circuitflip.flipledger.core.DataResult
 import com.circuitflip.flipledger.core.runCatchingResult
 import com.circuitflip.flipledger.data.remote.dto.BillingAccountDto
 import com.circuitflip.flipledger.data.remote.dto.BillingUrlResponse
+import com.circuitflip.flipledger.data.remote.dto.CheckoutSessionRequest
 import com.circuitflip.flipledger.data.remote.dto.toDomain
 import com.circuitflip.flipledger.domain.model.SubscriptionAccess
+import com.circuitflip.flipledger.domain.model.SubscriptionTier
 import com.circuitflip.flipledger.domain.repository.SubscriptionRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
@@ -49,8 +51,11 @@ class SubscriptionRepositoryImpl(
         result
     }
 
-    override suspend fun createCheckoutSession(): DataResult<String> = withContext(io) {
-        invokeBillingFunction("create-checkout-session")
+    override suspend fun createCheckoutSession(tier: SubscriptionTier): DataResult<String> = withContext(io) {
+        invokeBillingFunction(
+            name = "create-checkout-session",
+            body = CheckoutSessionRequest(tier.name.lowercase()),
+        )
     }
 
     override suspend fun createPortalSession(): DataResult<String> = withContext(io) {
@@ -68,9 +73,17 @@ class SubscriptionRepositoryImpl(
         access.value = SubscriptionAccess()
     }
 
-    private suspend fun invokeBillingFunction(name: String): DataResult<String> =
+    private suspend fun invokeBillingFunction(
+        name: String,
+        body: CheckoutSessionRequest? = null,
+    ): DataResult<String> =
         try {
-            val response = client.functions.invoke(name).body<BillingUrlResponse>()
+            val httpResponse = if (body == null) {
+                client.functions.invoke(name)
+            } else {
+                client.functions.invoke(name, body)
+            }
+            val response = httpResponse.body<BillingUrlResponse>()
             DataResult.Success(response.url)
         } catch (t: Throwable) {
             DataResult.Failure(AppError.from(t))

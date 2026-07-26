@@ -15,6 +15,7 @@ import com.circuitflip.flipledger.domain.model.Sale
 import com.circuitflip.flipledger.domain.model.SalesChannel
 import com.circuitflip.flipledger.domain.model.SubscriptionAccess
 import com.circuitflip.flipledger.domain.model.SubscriptionStatus
+import com.circuitflip.flipledger.domain.model.SubscriptionTier
 import com.circuitflip.flipledger.domain.model.WorkspaceType
 import com.circuitflip.flipledger.domain.util.Dates
 import kotlinx.serialization.EncodeDefault
@@ -87,6 +88,7 @@ data class ProfileDto(
 @Serializable
 data class BillingAccountDto(
     @SerialName("lifetime_devices_created") val lifetimeDevicesCreated: Int = 0,
+    @SerialName("plan_tier") val planTier: String = "free",
     @SerialName("subscription_status") val subscriptionStatus: String = "free",
     @SerialName("current_period_end") val currentPeriodEnd: String? = null,
     @SerialName("cancel_at_period_end") val cancelAtPeriodEnd: Boolean = false,
@@ -94,6 +96,9 @@ data class BillingAccountDto(
 
 @Serializable
 data class BillingUrlResponse(val url: String)
+
+@Serializable
+data class CheckoutSessionRequest(val plan: String)
 
 // ---- DTO → domain --------------------------------------------------------
 
@@ -145,6 +150,7 @@ fun ProfileDto.toDomain(): BusinessProfile = BusinessProfile(
 )
 
 fun BillingAccountDto.toDomain(): SubscriptionAccess = SubscriptionAccess(
+    tier = SubscriptionTier.fromWire(planTier),
     status = SubscriptionStatus.fromWire(subscriptionStatus),
     lifetimeDevicesCreated = lifetimeDevicesCreated,
     currentPeriodEnd = currentPeriodEnd,

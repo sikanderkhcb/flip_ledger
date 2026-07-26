@@ -4,6 +4,7 @@ import com.circuitflip.flipledger.core.DataResult
 import com.circuitflip.flipledger.core.onFailure
 import com.circuitflip.flipledger.core.onSuccess
 import com.circuitflip.flipledger.domain.model.SubscriptionAccess
+import com.circuitflip.flipledger.domain.model.SubscriptionTier
 import com.circuitflip.flipledger.domain.repository.SubscriptionRepository
 import com.circuitflip.flipledger.presentation.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,7 @@ data class SubscriptionUiState(
     val loading: Boolean = true,
     val actionLoading: Boolean = false,
     val checkingDeviceLimit: Boolean = false,
+    val checkoutTier: SubscriptionTier? = null,
     val externalUrl: String? = null,
     val error: String? = null,
 )
@@ -48,7 +50,10 @@ class SubscriptionViewModel(
         }
     }
 
-    fun startCheckout() = openExternal(repository::createCheckoutSession)
+    fun startCheckout(tier: SubscriptionTier) = openExternal(
+        action = { repository.createCheckoutSession(tier) },
+        checkoutTier = tier,
+    )
 
     fun manageSubscription() = openExternal(repository::createPortalSession)
 
@@ -72,10 +77,17 @@ class SubscriptionViewModel(
         }
     }
 
-    private fun openExternal(action: suspend () -> DataResult<String>) {
+    private fun openExternal(
+        action: suspend () -> DataResult<String>,
+        checkoutTier: SubscriptionTier? = null,
+    ) {
         if (_state.value.actionLoading) return
         scope.launch {
-            _state.value = _state.value.copy(actionLoading = true, error = null)
+            _state.value = _state.value.copy(
+                actionLoading = true,
+                checkoutTier = checkoutTier,
+                error = null,
+            )
             action()
                 .onSuccess { url ->
                     _state.value = _state.value.copy(externalUrl = url)
@@ -83,7 +95,10 @@ class SubscriptionViewModel(
                 .onFailure { error ->
                     _state.value = _state.value.copy(error = error.userMessage())
                 }
-            _state.value = _state.value.copy(actionLoading = false)
+            _state.value = _state.value.copy(
+                actionLoading = false,
+                checkoutTier = null,
+            )
         }
     }
 }

@@ -14,6 +14,7 @@ import com.circuitflip.flipledger.domain.model.LockStatus
 import com.circuitflip.flipledger.domain.model.Sale
 import com.circuitflip.flipledger.domain.model.SalesChannel
 import com.circuitflip.flipledger.domain.model.SubscriptionAccess
+import com.circuitflip.flipledger.domain.model.SubscriptionTier
 import com.circuitflip.flipledger.domain.model.WorkspaceType
 import com.circuitflip.flipledger.domain.repository.AuthRepository
 import com.circuitflip.flipledger.domain.repository.InventoryRepository
@@ -231,7 +232,8 @@ private class FakeSubscriptionRepository : SubscriptionRepository {
     private val access = MutableStateFlow(SubscriptionAccess())
     override fun observeAccess(): Flow<SubscriptionAccess> = access
     override suspend fun refresh() = DataResult.Success(access.value)
-    override suspend fun createCheckoutSession() = DataResult.Success("https://example.com/checkout")
+    override suspend fun createCheckoutSession(tier: SubscriptionTier) =
+        DataResult.Success("https://example.com/checkout")
     override suspend fun createPortalSession() = DataResult.Success("https://example.com/portal")
     override fun recordDeviceAdded() {
         access.value = access.value.copy(

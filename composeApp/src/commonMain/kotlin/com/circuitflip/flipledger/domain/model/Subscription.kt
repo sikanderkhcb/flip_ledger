@@ -2,6 +2,17 @@ package com.circuitflip.flipledger.domain.model
 
 const val FREE_DEVICE_LIMIT = 5
 
+enum class SubscriptionTier {
+    FREE,
+    SOLO,
+    PARTNER;
+
+    companion object {
+        fun fromWire(value: String): SubscriptionTier =
+            entries.firstOrNull { it.name.equals(value, ignoreCase = true) } ?: FREE
+    }
+}
+
 enum class SubscriptionStatus {
     FREE,
     INCOMPLETE,
@@ -20,6 +31,7 @@ enum class SubscriptionStatus {
 }
 
 data class SubscriptionAccess(
+    val tier: SubscriptionTier = SubscriptionTier.FREE,
     val status: SubscriptionStatus = SubscriptionStatus.FREE,
     val lifetimeDevicesCreated: Int = 0,
     val currentPeriodEnd: String? = null,

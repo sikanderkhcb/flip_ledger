@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.circuitflip.flipledger.domain.model.FREE_DEVICE_LIMIT
 import com.circuitflip.flipledger.domain.model.SubscriptionPlan
 import com.circuitflip.flipledger.domain.model.SubscriptionStatus
+import com.circuitflip.flipledger.domain.model.SubscriptionTier
 import com.circuitflip.flipledger.presentation.components.FlipTopBar
 import com.circuitflip.flipledger.presentation.components.PrimaryButton
 import com.circuitflip.flipledger.presentation.components.SecondaryButton
@@ -53,7 +54,7 @@ fun SubscriptionScreen(
         }
     }
     val plans = listOf(
-        SubscriptionPlan(
+        SubscriptionTier.FREE to SubscriptionPlan(
             "Free",
             "$0",
             listOf(
@@ -61,7 +62,7 @@ fun SubscriptionScreen(
                 "Basic profit tracking",
             ),
         ),
-        SubscriptionPlan(
+        SubscriptionTier.SOLO to SubscriptionPlan(
             "Solo",
             "$10/mo",
             listOf(
@@ -69,9 +70,8 @@ fun SubscriptionScreen(
                 "Full profit tracking",
                 "CSV export",
             ),
-            highlighted = true,
         ),
-        SubscriptionPlan(
+        SubscriptionTier.PARTNER to SubscriptionPlan(
             "Partner",
             "$19/mo",
             listOf(
@@ -81,6 +81,18 @@ fun SubscriptionScreen(
             ),
         ),
     )
+    val shouldManage = state.access.status in setOf(
+        SubscriptionStatus.ACTIVE,
+        SubscriptionStatus.TRIALING,
+        SubscriptionStatus.PAST_DUE,
+        SubscriptionStatus.UNPAID,
+        SubscriptionStatus.PAUSED,
+    )
+    val displayedTier = if (state.access.isUnlimited) {
+        state.access.tier
+    } else {
+        SubscriptionTier.FREE
+    }
 
     Box(Modifier.fillMaxSize().background(colors.backgroundSubtle)) {
         Column(Modifier.fillMaxSize().systemBarsPadding()) {
@@ -100,7 +112,7 @@ fun SubscriptionScreen(
             ) {
                 Text(
                     if (state.access.isUnlimited) {
-                        "Unlimited devices are active"
+                        "${state.access.tier.displayName} plan is active"
                     } else if (state.access.remainingFreeDevices == 0) {
                         "You've used all $FREE_DEVICE_LIMIT free device flips"
                     } else {
@@ -119,7 +131,21 @@ fun SubscriptionScreen(
                     color = colors.textWeaker,
                 )
 
-                plans.forEach { plan -> PlanCard(plan) }
+                plans.forEach { (tier, plan) ->
+                    PlanCard(
+                        plan = plan,
+                        highlighted = tier == displayedTier,
+                        actionText = when {
+                            shouldManage || tier == SubscriptionTier.FREE -> null
+                            tier == SubscriptionTier.SOLO -> "Choose Solo — $10/month"
+                            else -> "Choose Partner — $19/month"
+                        },
+                        actionLoading = state.actionLoading && state.checkoutTier == tier,
+                        actionsEnabled = !state.actionLoading,
+                        primaryAction = tier == SubscriptionTier.SOLO,
+                        onAction = { vm.startCheckout(tier) },
+                    )
+                }
 
                 state.error?.let { message ->
                     Text(
@@ -129,26 +155,13 @@ fun SubscriptionScreen(
                     )
                 }
 
-                val shouldManage = state.access.status in setOf(
-                    SubscriptionStatus.ACTIVE,
-                    SubscriptionStatus.TRIALING,
-                    SubscriptionStatus.PAST_DUE,
-                    SubscriptionStatus.UNPAID,
-                    SubscriptionStatus.PAUSED,
-                )
-                PrimaryButton(
-                    text = if (shouldManage) {
-                        "Manage subscription"
-                    } else {
-                        "Upgrade to Solo — $10/month"
-                    },
-                    onClick = if (shouldManage) {
-                        vm::manageSubscription
-                    } else {
-                        vm::startCheckout
-                    },
-                    loading = state.actionLoading,
-                )
+                if (shouldManage) {
+                    PrimaryButton(
+                        text = "Manage subscription",
+                        onClick = vm::manageSubscription,
+                        loading = state.actionLoading,
+                    )
+                }
                 SecondaryButton(
                     text = "Refresh subscription status",
                     onClick = vm::refresh,
@@ -165,15 +178,23 @@ fun SubscriptionScreen(
 }
 
 @Composable
-private fun PlanCard(plan: SubscriptionPlan) {
+private fun PlanCard(
+    plan: SubscriptionPlan,
+    highlighted: Boolean,
+    actionText: String?,
+    actionLoading: Boolean,
+    actionsEnabled: Boolean,
+    primaryAction: Boolean,
+    onAction: () -> Unit,
+) {
     val colors = FlipTheme.colors
-    val borderColor = if (plan.highlighted) colors.primary else colors.borderDefault
+    val borderColor = if (highlighted) colors.primary else colors.borderDefault
     Column(
         Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(Radius.card))
             .background(colors.backgroundDefault)
             .border(
-                BorderStroke(if (plan.highlighted) 2.dp else 1.dp, borderColor),
+                BorderStroke(if (highlighted) 2.dp else 1.dp, borderColor),
                 RoundedCornerShape(Radius.card),
             )
             .padding(18.dp),
@@ -187,7 +208,7 @@ private fun PlanCard(plan: SubscriptionPlan) {
             Text(
                 plan.price,
                 style = FlipTheme.typography.headingM,
-                color = if (plan.highlighted) colors.primary else colors.textDefault,
+                color = if (highlighted) colors.primary else colors.textDefault,
             )
         }
         Spacer(Modifier.height(12.dp))
@@ -209,5 +230,29 @@ private fun PlanCard(plan: SubscriptionPlan) {
                 )
             }
         }
+        actionText?.let { text ->
+            Spacer(Modifier.height(14.dp))
+            if (primaryAction) {
+                PrimaryButton(
+                    text = text,
+                    onClick = onAction,
+                    enabled = actionsEnabled,
+                    loading = actionLoading,
+                )
+            } else {
+                SecondaryButton(
+                    text = text,
+                    onClick = onAction,
+                    enabled = actionsEnabled,
+                )
+            }
+        }
     }
 }
+
+private val SubscriptionTier.displayName: String
+    get() = when (this) {
+        SubscriptionTier.FREE -> "Free"
+        SubscriptionTier.SOLO -> "Solo"
+        SubscriptionTier.PARTNER -> "Partner"
+    }

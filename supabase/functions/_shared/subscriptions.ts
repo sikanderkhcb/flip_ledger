@@ -8,6 +8,27 @@ function expandableId(
   return typeof value === "string" ? value : value.id;
 }
 
+function subscriptionTier(
+  subscription: Stripe.Subscription,
+): "solo" | "partner" {
+  const priceIds = subscription.items.data.map((item) => item.price.id);
+  const partnerPriceId = Deno.env.get("STRIPE_PARTNER_PRICE_ID");
+  if (partnerPriceId && priceIds.includes(partnerPriceId)) return "partner";
+
+  const soloPriceId = Deno.env.get("STRIPE_SOLO_PRICE_ID");
+  if (soloPriceId && priceIds.includes(soloPriceId)) return "solo";
+
+  // Metadata is a fallback for older events whose Price object is unavailable.
+  const metadataTier = subscription.metadata.subscription_tier;
+  if (metadataTier === "solo" || metadataTier === "partner") {
+    return metadataTier;
+  }
+
+  throw new Error(
+    `Subscription ${subscription.id} does not use a configured FlipLedger price`,
+  );
+}
+
 export async function syncSubscription(
   admin: SupabaseClient,
   subscription: Stripe.Subscription,
@@ -39,6 +60,7 @@ export async function syncSubscription(
       user_id: userId,
       stripe_customer_id: customerId,
       stripe_subscription_id: subscription.id,
+      plan_tier: subscriptionTier(subscription),
       subscription_status: subscription.status,
       current_period_end: periodEnd
         ? new Date(periodEnd * 1000).toISOString()

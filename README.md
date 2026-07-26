@@ -45,16 +45,18 @@ supabase db push
 
 ## Stripe subscription setup
 
-The mobile app uses Stripe Checkout for a recurring $10/month unlimited-device subscription.
+The mobile app uses Stripe Checkout for two recurring unlimited-device subscriptions:
+Solo at $10/month and Partner at $19/month.
 Stripe API calls run only in Supabase Edge Functions; no Stripe secret is embedded in the app.
 
-1. In Stripe test mode, create a Product named `FlipLedger Unlimited` and a recurring Price:
-   USD `$10.00`, billed monthly.
+1. In Stripe test mode, create recurring monthly Prices for Solo (`$10.00`) and
+   Partner (`$19.00`).
 2. Create a restricted API key (`rk_...`) rather than a broad secret key. Grant only the
    Customer, Checkout Session, Billing Portal Session, Subscription, Price, and Product
    permissions required by the functions.
 3. Copy `supabase/functions/.env.example` to an ignored local environment file and supply:
-   `STRIPE_API_KEY`, `STRIPE_PRICE_ID`, and `STRIPE_WEBHOOK_SECRET`.
+   `STRIPE_API_KEY`, `STRIPE_SOLO_PRICE_ID`, `STRIPE_PARTNER_PRICE_ID`, and
+   `STRIPE_PORTAL_CONFIGURATION_ID`, and `STRIPE_WEBHOOK_SECRET`.
 4. Store production values in Supabase project secrets:
 
 ```bash
@@ -86,7 +88,9 @@ customer.subscription.updated
 customer.subscription.deleted
 ```
 
-7. Enable and configure Stripe Customer Portal so users can update payment details or cancel.
+7. Configure Stripe Customer Portal to allow switching between only the Solo and Partner
+   prices. Use immediate proration for plan changes and end-of-period cancellation. Store
+   that portal configuration's `bpc_...` ID as `STRIPE_PORTAL_CONFIGURATION_ID`.
 
 The functions use Stripe API version `2026-06-24.dahlia`. The webhook verifies Stripe's
 signature before changing subscription access.

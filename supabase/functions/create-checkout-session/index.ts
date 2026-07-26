@@ -11,6 +11,14 @@ import {
   methodNotAllowed,
 } from "../_shared/http.ts";
 
+type CheckoutTier = "solo" | "partner";
+
+function priceIdFor(tier: CheckoutTier): string {
+  return requiredEnv(
+    tier === "solo" ? "STRIPE_SOLO_PRICE_ID" : "STRIPE_PARTNER_PRICE_ID",
+  );
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -21,6 +29,13 @@ Deno.serve(async (request) => {
     const admin = createAdminClient();
     const user = await requireUser(request, admin);
     const stripe = createStripeClient();
+    const body = await request.json().catch(() => null) as
+      | { plan?: unknown }
+      | null;
+    if (body?.plan !== "solo" && body?.plan !== "partner") {
+      return jsonResponse({ error: "Plan must be solo or partner." }, 400);
+    }
+    const tier: CheckoutTier = body.plan;
 
     const { data: existing, error: accountError } = await admin
       .from("billing_accounts")
@@ -63,13 +78,19 @@ Deno.serve(async (request) => {
       client_reference_id: user.id,
       line_items: [
         {
-          price: requiredEnv("STRIPE_PRICE_ID"),
+          price: priceIdFor(tier),
           quantity: 1,
         },
       ],
-      metadata: { supabase_user_id: user.id },
+      metadata: {
+        supabase_user_id: user.id,
+        subscription_tier: tier,
+      },
       subscription_data: {
-        metadata: { supabase_user_id: user.id },
+        metadata: {
+          supabase_user_id: user.id,
+          subscription_tier: tier,
+        },
       },
       success_url: `${returnBase}?result=success`,
       cancel_url: `${returnBase}?result=cancelled`,

@@ -36,6 +36,7 @@ Deno.serve(async (request) => {
       `${requiredEnv("SUPABASE_URL")}/functions/v1/stripe-return?result=portal`;
     const session = await stripe.billingPortal.sessions.create({
       customer: data.stripe_customer_id,
+      configuration: requiredEnv("STRIPE_PORTAL_CONFIGURATION_ID"),
       return_url: returnUrl,
     });
     return jsonResponse({ url: session.url });
