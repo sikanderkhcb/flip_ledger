@@ -34,7 +34,7 @@ val presentationModule = module {
     factory { DashboardViewModel(get(), get(), get(), get(), get()) }
     factory { InventoryViewModel(get()) }
     factory { AddDeviceViewModel(get(), get()) }
-    factory { DeviceDetailViewModel(get(), get(), get()) }
+    factory { DeviceDetailViewModel(get(), get(), get(), get()) }
     factory { DeviceCareViewModel(get(), get(), get()) }
     factory { AddCostViewModel(get(), get()) }
     factory { SaleViewModel(get(), get(), get()) }

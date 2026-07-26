@@ -17,10 +17,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -40,7 +43,10 @@ fun DeviceDetailScreen(deviceId: String, onBack: () -> Unit, onAddCost: () -> Un
     LaunchedEffect(deviceId) { vm.load(deviceId) }
     val state by vm.state.collectAsState()
     val submitting by vm.submitting.collectAsState()
+    val deleted by vm.deleted.collectAsState()
+    var showDeleteConfirmation by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val colors = FlipTheme.colors
+    LaunchedEffect(deleted) { if (deleted) onBack() }
     val device = state.device ?: return
 
     Box(Modifier.fillMaxSize().background(colors.backgroundSubtle)) {
@@ -110,12 +116,27 @@ fun DeviceDetailScreen(deviceId: String, onBack: () -> Unit, onAddCost: () -> Un
                 PrimaryButton(vm.primaryActionLabel(device.status), onClick = { if (vm.onPrimaryAction(device.status)) onStartSale() }, loading = submitting)
                 Spacer(Modifier.height(10.dp))
                 SecondaryButton("Add expense", onAddCost)
+                Spacer(Modifier.height(10.dp))
+                SecondaryButton("Delete device", { showDeleteConfirmation = true }, enabled = !submitting)
                 state.error?.let {
                     Spacer(Modifier.height(8.dp))
                     Text(it, style = FlipTheme.typography.bodyS, color = colors.error)
                 }
             }
         }
+    }
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { if (!submitting) showDeleteConfirmation = false },
+            title = { Text("Delete ${device.model}?") },
+            text = { Text("This permanently removes the device and its expenses. It will not restore a free device slot.") },
+            confirmButton = {
+                TextButton(onClick = { showDeleteConfirmation = false; vm.delete(deviceId) }, enabled = !submitting) {
+                    Text("Delete", color = colors.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { showDeleteConfirmation = false }, enabled = !submitting) { Text("Cancel") } },
+        )
     }
 }
 

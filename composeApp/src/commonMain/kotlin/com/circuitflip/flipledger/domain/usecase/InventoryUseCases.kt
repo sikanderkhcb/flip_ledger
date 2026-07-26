@@ -74,6 +74,10 @@ class UpdateDeviceStatusUseCase(private val repo: InventoryRepository) {
         repo.updateStatus(deviceId, status)
 }
 
+class DeleteDeviceUseCase(private val repo: InventoryRepository) {
+    suspend operator fun invoke(deviceId: String): DataResult<Unit> = repo.deleteDevice(deviceId)
+}
+
 class UpdateDeviceCareUseCase(private val repo: InventoryRepository) {
     suspend operator fun invoke(deviceId: String, draft: DeviceCareDraft): DataResult<Unit> {
         val dates = listOf(
