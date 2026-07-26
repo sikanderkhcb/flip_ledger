@@ -47,7 +47,7 @@ private struct StartupSplashView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                Image("LaunchLogo")
+                Image("LaunchLogoV2")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 104, height: 104)
