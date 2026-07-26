@@ -1,6 +1,6 @@
 package com.circuitflip.flipledger.domain.model
 
-const val FREE_DEVICE_LIMIT = 10
+const val FREE_DEVICE_LIMIT = 5
 
 enum class SubscriptionStatus {
     FREE,

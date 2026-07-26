@@ -2,6 +2,7 @@ package com.circuitflip.flipledger
 
 import com.circuitflip.flipledger.domain.model.SubscriptionAccess
 import com.circuitflip.flipledger.domain.model.SubscriptionStatus
+import com.circuitflip.flipledger.domain.model.FREE_DEVICE_LIMIT
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -10,9 +11,9 @@ import kotlin.test.assertTrue
 class SubscriptionAccessTest {
 
     @Test
-    fun freeAccountCanAddOnlyFirstTenLifetimeDevices() {
-        val beforeLimit = SubscriptionAccess(lifetimeDevicesCreated = 9)
-        val atLimit = SubscriptionAccess(lifetimeDevicesCreated = 10)
+    fun freeAccountCanAddOnlyFirstFiveLifetimeDevices() {
+        val beforeLimit = SubscriptionAccess(lifetimeDevicesCreated = FREE_DEVICE_LIMIT - 1)
+        val atLimit = SubscriptionAccess(lifetimeDevicesCreated = FREE_DEVICE_LIMIT)
 
         assertTrue(beforeLimit.canAddDevice)
         assertEquals(1, beforeLimit.remainingFreeDevices)

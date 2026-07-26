@@ -33,7 +33,7 @@ supabase/migrations/
 ```
 
 They create the application tables, ownership indexes, Row Level Security policies,
-subscription state, the lifetime 10-device free allowance, and transactional database
+subscription state, the lifetime 5-device free allowance, and transactional database
 functions. The server blocks device 11 unless Stripe reports an active subscription. Sales
 for existing devices are never blocked.
 
@@ -121,7 +121,7 @@ For iOS, open `iosApp/iosApp.xcodeproj`. Its build phase calls:
 - User-entered business dates are stored as ISO-8601 dates (`YYYY-MM-DD`).
 - Monthly dashboard, sales, settlement, and report totals use the recorded sale date.
 - Supabase RLS (Row Level Security) limits every row to its authenticated owner.
-- Free accounts can create 10 device records over their lifetime. Selling or deleting a
+- Free accounts can create 5 device records over their lifetime. Selling or deleting a
   device does not restore a free slot.
 - Active Stripe subscribers can create unlimited devices.
 - A cancelled or expired subscriber may view and sell every existing device but cannot add

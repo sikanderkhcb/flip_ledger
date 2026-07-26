@@ -1,5 +1,6 @@
 package com.circuitflip.flipledger.core
 
+import com.circuitflip.flipledger.domain.model.FREE_DEVICE_LIMIT
 import kotlinx.io.IOException
 
 /**
@@ -21,7 +22,7 @@ sealed class AppError(open val cause: Throwable? = null) {
         is Unauthorized -> reason ?: "Your session expired. Please sign in again."
         is NotFound -> "We couldn't find that $what."
         is Validation -> message
-        SubscriptionRequired -> "You've used all 10 free device slots. Upgrade to add more."
+        SubscriptionRequired -> "You've used all $FREE_DEVICE_LIMIT free device slots. Upgrade to add more."
         is Storage -> "Something went wrong saving your data. Please try again."
         is Unknown -> "Something went wrong. Please try again."
     }

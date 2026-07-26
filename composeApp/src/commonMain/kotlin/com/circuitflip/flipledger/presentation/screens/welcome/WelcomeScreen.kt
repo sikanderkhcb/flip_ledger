@@ -47,7 +47,7 @@ fun WelcomeScreen(onGetStarted: () -> Unit, onHaveAccount: () -> Unit) {
         }
         Column(Modifier.padding(24.dp)) {
             Text(
-                "10 device records free · No credit card required",
+                "5 device records free · No credit card required",
                 style = FlipTheme.typography.bodyS,
                 color = FlipTheme.colors.textWeaker,
                 modifier = Modifier.fillMaxWidth(),

@@ -55,7 +55,7 @@ fun AuthScreen(signUp: Boolean, onBack: () -> Unit, onAuthenticated: () -> Unit,
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                if (signUp) "Track up to 10 device records free. Upgrade to unlimited for $10/month when you need it."
+                if (signUp) "Track up to 5 device records free. Upgrade to Solo for $10/month when you need it."
                 else "Sign in to keep tracking your inventory and profit.",
                 style = FlipTheme.typography.bodyL, color = FlipTheme.colors.textWeaker,
             )
