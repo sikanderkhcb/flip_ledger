@@ -71,15 +71,6 @@ fun SubscriptionScreen(
                 "CSV export",
             ),
         ),
-        SubscriptionTier.PARTNER to SubscriptionPlan(
-            "Partner",
-            "$19/mo",
-            listOf(
-                "Everything in Solo",
-                "Partner settlements",
-                "Evidence vault",
-            ),
-        ),
     )
     val shouldManage = state.access.status in setOf(
         SubscriptionStatus.ACTIVE,
@@ -138,7 +129,7 @@ fun SubscriptionScreen(
                         actionText = when {
                             shouldManage || tier == SubscriptionTier.FREE -> null
                             tier == SubscriptionTier.SOLO -> "Choose Solo — $10/month"
-                            else -> "Choose Partner — $19/month"
+                            else -> null
                         },
                         actionLoading = state.actionLoading && state.checkoutTier == tier,
                         actionsEnabled = !state.actionLoading,

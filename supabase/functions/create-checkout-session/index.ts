@@ -11,11 +11,11 @@ import {
   methodNotAllowed,
 } from "../_shared/http.ts";
 
-type CheckoutTier = "solo" | "partner";
+type CheckoutTier = "solo";
 
 function priceIdFor(tier: CheckoutTier): string {
   return requiredEnv(
-    tier === "solo" ? "STRIPE_SOLO_PRICE_ID" : "STRIPE_PARTNER_PRICE_ID",
+    "STRIPE_SOLO_PRICE_ID",
   );
 }
 
@@ -32,8 +32,8 @@ Deno.serve(async (request) => {
     const body = await request.json().catch(() => null) as
       | { plan?: unknown }
       | null;
-    if (body?.plan !== "solo" && body?.plan !== "partner") {
-      return jsonResponse({ error: "Plan must be solo or partner." }, 400);
+    if (body?.plan !== "solo") {
+      return jsonResponse({ error: "Only the Solo plan is available." }, 400);
     }
     const tier: CheckoutTier = body.plan;
 
