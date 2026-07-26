@@ -46,7 +46,15 @@ fun WelcomeScreen(onGetStarted: () -> Unit, onHaveAccount: () -> Unit) {
             }
         }
         Column(Modifier.padding(24.dp)) {
-            PrimaryButton("Get Started", onGetStarted)
+            Text(
+                "5 device records free · No credit card required",
+                style = FlipTheme.typography.bodyS,
+                color = FlipTheme.colors.textWeaker,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            Spacer(Modifier.height(12.dp))
+            PrimaryButton("Start Free", onGetStarted)
             Spacer(Modifier.height(8.dp))
             LinkButton("I already have an account", onHaveAccount, Modifier.fillMaxWidth())
         }

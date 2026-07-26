@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,9 +38,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.circuitflip.flipledger.domain.model.AttentionItem
 import com.circuitflip.flipledger.domain.model.Sale
+import com.circuitflip.flipledger.domain.model.FREE_DEVICE_LIMIT
+import com.circuitflip.flipledger.domain.model.SubscriptionAccess
+import com.circuitflip.flipledger.domain.model.CategoryCount
+import com.circuitflip.flipledger.domain.model.CategoryBars
 import com.circuitflip.flipledger.domain.util.Money
 import com.circuitflip.flipledger.domain.util.toPercentLabel
 import com.circuitflip.flipledger.presentation.components.FlipCard
@@ -49,7 +56,14 @@ import com.circuitflip.flipledger.presentation.theme.FlipTheme
 
 /** 07 · Dashboard — greeting, hero profit card, metric grid, attention items, recent sales, FAB. */
 @Composable
-fun DashboardScreen(onAddDevice: () -> Unit, onSeeAllSales: () -> Unit, onOpenDevice: (String) -> Unit, onOpenSettings: () -> Unit) {
+fun DashboardScreen(
+    subscriptionAccess: SubscriptionAccess,
+    onAddDevice: () -> Unit,
+    onSeeAllSales: () -> Unit,
+    onOpenDevice: (String) -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenSubscription: () -> Unit,
+) {
     val vm = rememberViewModel<DashboardViewModel>()
     val state by vm.state.collectAsState()
     val colors = FlipTheme.colors
@@ -82,6 +96,30 @@ fun DashboardScreen(onAddDevice: () -> Unit, onSeeAllSales: () -> Unit, onOpenDe
                     )
                 }
             }
+            if (
+                !subscriptionAccess.isUnlimited &&
+                subscriptionAccess.lifetimeDevicesCreated >= FREE_DEVICE_LIMIT - 2
+            ) {
+                item {
+                    FlipCard(onClick = onOpenSubscription) {
+                        Text(
+                            "${subscriptionAccess.lifetimeDevicesCreated.coerceAtMost(FREE_DEVICE_LIMIT)} of $FREE_DEVICE_LIMIT free device flips used",
+                            style = FlipTheme.typography.headingS,
+                            color = colors.textDefault,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            if (subscriptionAccess.remainingFreeDevices == 0) {
+                                "Upgrade to add another device."
+                            } else {
+                                "${subscriptionAccess.remainingFreeDevices} free device ${if (subscriptionAccess.remainingFreeDevices == 1) "flip" else "flips"} remaining."
+                            },
+                            style = FlipTheme.typography.bodyM,
+                            color = colors.textWeaker,
+                        )
+                    }
+                }
+            }
             // Hero month-profit card
             item {
                 FlipCard {
@@ -107,6 +145,10 @@ fun DashboardScreen(onAddDevice: () -> Unit, onSeeAllSales: () -> Unit, onOpenDe
                     StatCard("Inventory Value", Money.format(m.inventoryValueCents), Modifier.weight(1f))
                     StatCard("Avg Margin", m.avgMarginFraction.toPercentLabel(), Modifier.weight(1f))
                 }
+            }
+            if (state.categoryCounts.isNotEmpty()) {
+                item { CategoryPieCard(state.categoryCounts) }
+                item { BoughtSoldBarCard(state.categoryBars) }
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -151,6 +193,70 @@ fun DashboardScreen(onAddDevice: () -> Unit, onSeeAllSales: () -> Unit, onOpenDe
             contentColor = colors.textInverse,
             modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
         ) { Icon(Icons.Rounded.Add, contentDescription = "Add Device") }
+    }
+}
+
+@Composable
+private fun CategoryPieCard(items: List<CategoryCount>) {
+    val colors = FlipTheme.colors
+    val palette = listOf(colors.primary, colors.success, colors.info, colors.warning, colors.accentAmberLight)
+    FlipCard {
+        Text("Devices by category", style = FlipTheme.typography.headingM, color = colors.textDefault)
+        Spacer(Modifier.height(12.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            val total = items.sumOf { it.count }.coerceAtLeast(1)
+            Canvas(Modifier.size(150.dp)) {
+                var start = -90f
+                items.forEachIndexed { index, item ->
+                    val sweep = item.count.toFloat() / total * 360f
+                    drawArc(palette[index % palette.size], start, sweep, true)
+                    start += sweep
+                }
+                drawCircle(colors.backgroundDefault, radius = size.minDimension * .22f)
+            }
+            Column(Modifier.padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items.forEachIndexed { index, item ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(palette[index % palette.size]))
+                        Spacer(Modifier.width(8.dp))
+                        Text("${item.label} · ${item.count}", style = FlipTheme.typography.caption, color = colors.textWeaker)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoughtSoldBarCard(items: List<CategoryBars>) {
+    val colors = FlipTheme.colors
+    val maxValue = items.maxOfOrNull { maxOf(it.bought, it.sold) }?.coerceAtLeast(1) ?: 1
+    FlipCard {
+        Text("Bought vs sold", style = FlipTheme.typography.headingM, color = colors.textDefault)
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            LegendDot(colors.info, "Bought")
+            LegendDot(colors.success, "Sold")
+        }
+        Spacer(Modifier.height(12.dp))
+        items.forEach { item ->
+            Column(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
+                Text(item.label, style = FlipTheme.typography.caption, color = colors.textWeaker)
+                Row(Modifier.fillMaxWidth().height(10.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Box(Modifier.weight(item.bought.coerceAtLeast(1).toFloat() / maxValue).fillMaxSize().clip(RoundedCornerShape(4.dp)).background(colors.info))
+                    Box(Modifier.weight(item.sold.coerceAtLeast(0).toFloat() / maxValue + .01f).fillMaxSize().clip(RoundedCornerShape(4.dp)).background(colors.success))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LegendDot(color: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(color))
+        Spacer(Modifier.width(5.dp))
+        Text(label, style = FlipTheme.typography.caption, color = FlipTheme.colors.textWeaker)
     }
 }
 

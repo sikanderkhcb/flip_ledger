@@ -40,6 +40,12 @@ class CompleteSaleUseCase(private val repo: SalesRepository) {
             costCents = invested,
             feesCents = fees,
             daysHeld = Dates.daysBetween(device.purchaseDate, soldDate.toString()) ?: device.daysHeld,
+            purchasePriceCents = device.purchasePriceCents,
+            purchaseDate = device.purchaseDate,
+            customerName = draft.customerName.trim(),
+            customerEmail = draft.customerEmail.trim(),
+            customerPhone = draft.customerPhone.trim(),
+            customerAddress = draft.customerAddress.trim(),
         )
         return repo.recordSale(sale, soldDeviceId = device.id)
     }

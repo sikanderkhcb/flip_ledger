@@ -33,8 +33,6 @@ class AuthViewModel(private val authRepository: AuthRepository) : BaseViewModel(
     fun onName(v: String) = updateField("name") { it.copy(name = v) }
     fun onEmail(v: String) = updateField("email") { it.copy(email = v) }
     fun onPassword(v: String) = updateField("password") { it.copy(password = v) }
-    fun onPhone(v: String) = updateField("phone") { it.copy(phone = v) }
-    fun onBusinessName(v: String) = updateField("businessName") { it.copy(businessName = v) }
 
     fun submit() {
         val s = _state.value

@@ -10,6 +10,9 @@ data class DashboardMetrics(
     val salesThisMonth: Int,
 )
 
+data class CategoryCount(val label: String, val count: Int)
+data class CategoryBars(val label: String, val bought: Int, val sold: Int)
+
 /** A "needs attention" nudge on the dashboard. */
 data class AttentionItem(
     val title: String,

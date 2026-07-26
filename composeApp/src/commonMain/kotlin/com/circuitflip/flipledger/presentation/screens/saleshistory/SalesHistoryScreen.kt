@@ -25,22 +25,30 @@ import com.circuitflip.flipledger.domain.model.Sale
 import com.circuitflip.flipledger.domain.util.Money
 import com.circuitflip.flipledger.domain.util.toPercentLabel
 import com.circuitflip.flipledger.presentation.components.FlipCard
+import com.circuitflip.flipledger.presentation.components.FlipTopBar
 import com.circuitflip.flipledger.presentation.components.StatCard
 import com.circuitflip.flipledger.presentation.rememberViewModel
 import com.circuitflip.flipledger.presentation.theme.FlipTheme
 
 /** 20 · Sales History — month summary stats + a list of completed sales. */
 @Composable
-fun SalesHistoryScreen(onBack: () -> Unit, onOpenSettlement: () -> Unit) {
+fun SalesHistoryScreen(onBack: (() -> Unit)?, onOpenSettlement: () -> Unit) {
     val vm = rememberViewModel<SalesHistoryViewModel>()
     val state by vm.state.collectAsState()
     val colors = FlipTheme.colors
 
     Box(Modifier.fillMaxSize().background(colors.backgroundSubtle)) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
-            Spacer(Modifier.height(24.dp))
-            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Sales", style = FlipTheme.typography.headingXl, color = colors.textDefault)
+            if (onBack != null) {
+                FlipTopBar(title = "Sales", onBack = onBack)
+            } else {
+                Spacer(Modifier.height(24.dp))
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Sales", style = FlipTheme.typography.headingXl, color = colors.textDefault)
+                }
             }
             Spacer(Modifier.height(16.dp))
             LazyColumn(

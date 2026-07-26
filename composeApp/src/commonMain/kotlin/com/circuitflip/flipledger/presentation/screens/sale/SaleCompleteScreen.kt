@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,17 +32,20 @@ import com.circuitflip.flipledger.presentation.theme.FlipTheme
 
 /** 19 · Sale Complete — celebratory result + margin/days/invested/channel + follow-ups. */
 @Composable
-fun SaleCompleteScreen(sale: Sale?, onViewSales: () -> Unit, onAddAnother: () -> Unit, onDashboard: () -> Unit) {
+fun SaleCompleteScreen(sale: Sale?, onViewSales: () -> Unit, onAddAnother: () -> Unit, onDashboard: () -> Unit, onInvoice: () -> Unit) {
     val colors = FlipTheme.colors
     Box(Modifier.fillMaxSize().background(colors.backgroundSubtle), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(28.dp)) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 28.dp),
+        ) {
             Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = colors.success, modifier = Modifier.size(64.dp))
             Spacer(Modifier.height(16.dp))
             Text("Sale recorded", style = FlipTheme.typography.displayM, color = colors.textDefault)
             Spacer(Modifier.height(8.dp))
             Text(Money.formatSigned(sale?.netProfitCents ?: 0), style = FlipTheme.typography.displayM, color = colors.success)
             Spacer(Modifier.height(24.dp))
-            FlipCard(Modifier.fillMaxSize().let { Modifier }) {
+            FlipCard(Modifier.fillMaxWidth()) {
                 statRow("Margin", (sale?.margin ?: 0.0).toPercentLabel())
                 statRow("Days held", "${sale?.daysHeld ?: 0} days")
                 statRow("Total invested", Money.format(sale?.costCents ?: 0))
@@ -51,6 +55,8 @@ fun SaleCompleteScreen(sale: Sale?, onViewSales: () -> Unit, onAddAnother: () ->
             PrimaryButton("Go to dashboard", onDashboard)
             Spacer(Modifier.height(10.dp))
             SecondaryButton("View sales", onViewSales)
+            Spacer(Modifier.height(10.dp))
+            SecondaryButton("View invoice", onInvoice)
             Spacer(Modifier.height(10.dp))
             SecondaryButton("Add another sale", onAddAnother)
         }

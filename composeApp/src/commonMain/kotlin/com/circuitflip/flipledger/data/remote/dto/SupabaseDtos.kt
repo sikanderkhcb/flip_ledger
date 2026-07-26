@@ -13,6 +13,9 @@ import com.circuitflip.flipledger.domain.model.LockStatus
 import com.circuitflip.flipledger.domain.model.PaidBy
 import com.circuitflip.flipledger.domain.model.Sale
 import com.circuitflip.flipledger.domain.model.SalesChannel
+import com.circuitflip.flipledger.domain.model.SubscriptionAccess
+import com.circuitflip.flipledger.domain.model.SubscriptionStatus
+import com.circuitflip.flipledger.domain.model.SubscriptionTier
 import com.circuitflip.flipledger.domain.model.WorkspaceType
 import com.circuitflip.flipledger.domain.util.Dates
 import kotlinx.serialization.EncodeDefault
@@ -40,6 +43,12 @@ data class DeviceDto(
     @SerialName("purchase_date") val purchaseDate: String = "",
     val status: String = "Purchased",
     @SerialName("days_held") val daysHeld: Int = 0,
+    @SerialName("repair_issue") val repairIssue: String = "",
+    @SerialName("repair_provider") val repairProvider: String = "",
+    @SerialName("repair_started_on") val repairStartedOn: String? = null,
+    @SerialName("repair_completed_on") val repairCompletedOn: String? = null,
+    @SerialName("warranty_provider") val warrantyProvider: String = "",
+    @SerialName("warranty_expires_on") val warrantyExpiresOn: String? = null,
 )
 
 @Serializable
@@ -64,6 +73,12 @@ data class SaleDto(
     @SerialName("cost_cents") val costCents: Long = 0,
     @SerialName("fees_cents") val feesCents: Long = 0,
     @SerialName("days_held") val daysHeld: Int = 0,
+    @SerialName("purchase_price_cents") val purchasePriceCents: Long = 0,
+    @SerialName("purchase_date") val purchaseDate: String? = null,
+    @SerialName("customer_name") val customerName: String = "",
+    @SerialName("customer_email") val customerEmail: String = "",
+    @SerialName("customer_phone") val customerPhone: String = "",
+    @SerialName("customer_address") val customerAddress: String = "",
     // Read-only: the DB fills created_at (default now()); never send it on insert.
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     @SerialName("created_at") val createdAt: String? = null,
@@ -82,6 +97,21 @@ data class ProfileDto(
     val onboarded: Boolean = false,
 )
 
+@Serializable
+data class BillingAccountDto(
+    @SerialName("lifetime_devices_created") val lifetimeDevicesCreated: Int = 0,
+    @SerialName("plan_tier") val planTier: String = "free",
+    @SerialName("subscription_status") val subscriptionStatus: String = "free",
+    @SerialName("current_period_end") val currentPeriodEnd: String? = null,
+    @SerialName("cancel_at_period_end") val cancelAtPeriodEnd: Boolean = false,
+)
+
+@Serializable
+data class BillingUrlResponse(val url: String)
+
+@Serializable
+data class CheckoutSessionRequest(val plan: String)
+
 // ---- DTO → domain --------------------------------------------------------
 
 fun DeviceDto.toDomain(costs: List<Cost>): Device = Device(
@@ -98,6 +128,12 @@ fun DeviceDto.toDomain(costs: List<Cost>): Device = Device(
     costs = costs,
     status = DeviceStatus.fromLabel(status),
     daysHeld = Dates.daysBetween(purchaseDate) ?: daysHeld,
+    repairIssue = repairIssue,
+    repairProvider = repairProvider,
+    repairStartedOn = repairStartedOn,
+    repairCompletedOn = repairCompletedOn,
+    warrantyProvider = warrantyProvider,
+    warrantyExpiresOn = warrantyExpiresOn,
 )
 
 fun CostDto.toDomain(): Cost = Cost(
@@ -118,6 +154,12 @@ fun SaleDto.toDomain(): Sale = Sale(
     costCents = costCents,
     feesCents = feesCents,
     daysHeld = daysHeld,
+    purchasePriceCents = purchasePriceCents,
+    purchaseDate = purchaseDate.orEmpty(),
+    customerName = customerName,
+    customerEmail = customerEmail,
+    customerPhone = customerPhone,
+    customerAddress = customerAddress,
     createdAt = createdAt,
 )
 
@@ -129,6 +171,14 @@ fun ProfileDto.toDomain(): BusinessProfile = BusinessProfile(
     splitYou = splitYou,
     currency = Currency.fromCode(currency),
     categoryPref = categoryPref,
+)
+
+fun BillingAccountDto.toDomain(): SubscriptionAccess = SubscriptionAccess(
+    tier = SubscriptionTier.fromWire(planTier),
+    status = SubscriptionStatus.fromWire(subscriptionStatus),
+    lifetimeDevicesCreated = lifetimeDevicesCreated,
+    currentPeriodEnd = currentPeriodEnd,
+    cancelAtPeriodEnd = cancelAtPeriodEnd,
 )
 
 // ---- domain → DTO --------------------------------------------------------
@@ -146,6 +196,12 @@ fun Device.toDto(): DeviceDto = DeviceDto(
     purchaseDate = purchaseDate,
     status = status.label,
     daysHeld = daysHeld,
+    repairIssue = repairIssue,
+    repairProvider = repairProvider,
+    repairStartedOn = repairStartedOn,
+    repairCompletedOn = repairCompletedOn,
+    warrantyProvider = warrantyProvider,
+    warrantyExpiresOn = warrantyExpiresOn,
 )
 
 fun Cost.toDto(deviceId: String): CostDto = CostDto(
@@ -167,6 +223,12 @@ fun Sale.toDto(): SaleDto = SaleDto(
     costCents = costCents,
     feesCents = feesCents,
     daysHeld = daysHeld,
+    purchasePriceCents = purchasePriceCents,
+    purchaseDate = purchaseDate,
+    customerName = customerName,
+    customerEmail = customerEmail,
+    customerPhone = customerPhone,
+    customerAddress = customerAddress,
 )
 
 fun BusinessProfile.toDto(id: String): ProfileDto = ProfileDto(

@@ -26,6 +26,15 @@ data class CostDraft(
     val note: String = "",
 )
 
+data class DeviceCareDraft(
+    val repairIssue: String = "",
+    val repairProvider: String = "",
+    val repairStartedOn: String = "",
+    val repairCompletedOn: String = "",
+    val warrantyProvider: String = "",
+    val warrantyExpiresOn: String = "",
+)
+
 data class SaleDraft(
     val price: String = "",
     val date: String = Dates.todayIso(),
@@ -35,6 +44,10 @@ data class SaleDraft(
     val shipping: String = "",
     val packaging: String = "",
     val otherFee: String = "",
+    val customerName: String = "",
+    val customerEmail: String = "",
+    val customerPhone: String = "",
+    val customerAddress: String = "",
 )
 
 /** Onboarding / auth form model. */

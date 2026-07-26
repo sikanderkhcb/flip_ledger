@@ -22,7 +22,7 @@ import com.circuitflip.flipledger.presentation.components.ChipGroup
 import com.circuitflip.flipledger.presentation.components.FieldLabel
 import com.circuitflip.flipledger.presentation.components.FlipCard
 import com.circuitflip.flipledger.presentation.components.FlipTextField
-import com.circuitflip.flipledger.presentation.components.LinkButton
+import com.circuitflip.flipledger.presentation.components.FlipTopBar
 import com.circuitflip.flipledger.presentation.components.PrimaryButton
 import com.circuitflip.flipledger.presentation.components.ScreenScaffold
 import com.circuitflip.flipledger.presentation.components.WizardHeader
@@ -131,18 +131,17 @@ private fun SetupShell(
     body: @Composable () -> Unit,
 ) {
     ScreenScaffold {
+        if (step > 1) {
+            FlipTopBar(title = "Setup", onBack = onBack)
+        }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp)) {
-            Spacer(Modifier.height(16.dp))
+            if (step == 1) Spacer(Modifier.height(16.dp))
             WizardHeader(step = step, totalSteps = 3, title = title, subtitle = subtitle)
             Spacer(Modifier.height(24.dp))
             body()
         }
         Column(Modifier.padding(24.dp)) {
             PrimaryButton(continueLabel, onContinue, loading = loading)
-            if (step > 1) {
-                Spacer(Modifier.height(4.dp))
-                LinkButton("Back", onBack, Modifier.fillMaxWidth())
-            }
         }
     }
 }

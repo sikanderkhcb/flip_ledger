@@ -27,6 +27,13 @@ object Dates {
         return (end.toEpochDays() - start.toEpochDays()).coerceAtLeast(0)
     }
 
+    /** Signed day difference used for expiry reminders; negative means already expired. */
+    fun daysUntil(dateIso: String, fromIso: String = todayIso()): Int? {
+        val target = parseIso(dateIso) ?: return null
+        val from = parseIso(fromIso) ?: return null
+        return target.toEpochDays() - from.toEpochDays()
+    }
+
     fun isInMonth(dateIso: String, year: Int, month: Int): Boolean =
         parseIso(dateIso)?.let { it.year == year && it.monthNumber == month } == true
 

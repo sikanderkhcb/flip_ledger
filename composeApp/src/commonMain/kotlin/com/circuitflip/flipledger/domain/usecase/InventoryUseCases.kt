@@ -6,8 +6,11 @@ import com.circuitflip.flipledger.domain.model.CostDraft
 import com.circuitflip.flipledger.domain.model.Device
 import com.circuitflip.flipledger.domain.model.DeviceDraft
 import com.circuitflip.flipledger.domain.model.DeviceStatus
+import com.circuitflip.flipledger.domain.model.DeviceCareDraft
+import com.circuitflip.flipledger.core.AppError
 import com.circuitflip.flipledger.domain.model.LockStatus
 import com.circuitflip.flipledger.domain.repository.InventoryRepository
+import com.circuitflip.flipledger.domain.repository.SubscriptionRepository
 import com.circuitflip.flipledger.domain.util.Dates
 import com.circuitflip.flipledger.domain.util.FormValidation
 import com.circuitflip.flipledger.domain.util.Ids
@@ -28,7 +31,10 @@ class ObserveDeviceUseCase(private val repo: InventoryRepository) {
  * Converts a completed [DeviceDraft] into a persisted [Device]. Applies the same defaulting
  * rules as the reference design (masked identifier, "Untitled device", etc.).
  */
-class AddDeviceUseCase(private val repo: InventoryRepository) {
+class AddDeviceUseCase(
+    private val repo: InventoryRepository,
+    private val subscriptionRepository: SubscriptionRepository,
+) {
     suspend operator fun invoke(draft: DeviceDraft): DataResult<Device> {
         FormValidation.firstError(FormValidation.device(draft))?.let {
             return DataResult.Failure(it)
@@ -57,13 +63,33 @@ class AddDeviceUseCase(private val repo: InventoryRepository) {
             status = DeviceStatus.PURCHASED,
             daysHeld = Dates.daysBetween(purchaseDate.toString()) ?: 0,
         )
-        return repo.addDevice(device)
+        val result = repo.addDevice(device)
+        if (result is DataResult.Success) subscriptionRepository.recordDeviceAdded()
+        return result
     }
 }
 
 class UpdateDeviceStatusUseCase(private val repo: InventoryRepository) {
     suspend operator fun invoke(deviceId: String, status: DeviceStatus) =
         repo.updateStatus(deviceId, status)
+}
+
+class DeleteDeviceUseCase(private val repo: InventoryRepository) {
+    suspend operator fun invoke(deviceId: String): DataResult<Unit> = repo.deleteDevice(deviceId)
+}
+
+class UpdateDeviceCareUseCase(private val repo: InventoryRepository) {
+    suspend operator fun invoke(deviceId: String, draft: DeviceCareDraft): DataResult<Unit> {
+        val dates = listOf(
+            "repairStartedOn" to draft.repairStartedOn,
+            "repairCompletedOn" to draft.repairCompletedOn,
+            "warrantyExpiresOn" to draft.warrantyExpiresOn,
+        )
+        dates.firstOrNull { it.second.isNotBlank() && Dates.parseIso(it.second) == null }?.let {
+            return DataResult.Failure(AppError.Validation(it.first, "Use YYYY-MM-DD."))
+        }
+        return repo.updateDeviceCare(deviceId, draft)
+    }
 }
 
 /** Validates and persists a cost from a [CostDraft]. */

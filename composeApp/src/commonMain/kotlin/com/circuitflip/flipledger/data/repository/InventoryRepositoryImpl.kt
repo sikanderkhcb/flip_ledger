@@ -10,6 +10,7 @@ import com.circuitflip.flipledger.data.remote.dto.toDto
 import com.circuitflip.flipledger.domain.model.Cost
 import com.circuitflip.flipledger.domain.model.Device
 import com.circuitflip.flipledger.domain.model.DeviceStatus
+import com.circuitflip.flipledger.domain.model.DeviceCareDraft
 import com.circuitflip.flipledger.domain.repository.InventoryRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
@@ -90,6 +91,35 @@ class InventoryRepositoryImpl(
         if (generation == cacheGeneration && result is DataResult.Success) {
             _devices.value = _devices.value.map {
                 if (it.id == deviceId) it.copy(status = status) else it
+            }
+        }
+        refreshSafely()
+        result
+    }
+
+    override suspend fun updateDeviceCare(deviceId: String, care: DeviceCareDraft): DataResult<Unit> = withContext(io) {
+        val generation = cacheGeneration
+        val result = runCatchingResult {
+            client.from("devices").update({
+                set("repair_issue", care.repairIssue.trim())
+                set("repair_provider", care.repairProvider.trim())
+                set("repair_started_on", care.repairStartedOn.trim().ifBlank { null })
+                set("repair_completed_on", care.repairCompletedOn.trim().ifBlank { null })
+                set("warranty_provider", care.warrantyProvider.trim())
+                set("warranty_expires_on", care.warrantyExpiresOn.trim().ifBlank { null })
+            }) { filter { eq("id", deviceId) } }
+            Unit
+        }
+        if (generation == cacheGeneration && result is DataResult.Success) {
+            _devices.value = _devices.value.map {
+                if (it.id == deviceId) it.copy(
+                    repairIssue = care.repairIssue.trim(),
+                    repairProvider = care.repairProvider.trim(),
+                    repairStartedOn = care.repairStartedOn.trim().ifBlank { null },
+                    repairCompletedOn = care.repairCompletedOn.trim().ifBlank { null },
+                    warrantyProvider = care.warrantyProvider.trim(),
+                    warrantyExpiresOn = care.warrantyExpiresOn.trim().ifBlank { null },
+                ) else it
             }
         }
         refreshSafely()

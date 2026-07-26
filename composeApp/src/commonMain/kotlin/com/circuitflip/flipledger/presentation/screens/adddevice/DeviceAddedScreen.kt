@@ -47,7 +47,7 @@ fun DeviceAddedScreen(
                 Text(deviceSummary, style = FlipTheme.typography.bodyM, color = FlipTheme.colors.textWeakest, textAlign = TextAlign.Center)
             }
             Spacer(Modifier.height(32.dp))
-            SecondaryButton("Add repair cost", onAddRepairCost)
+            SecondaryButton("Add repair expense", onAddRepairCost)
             Spacer(Modifier.height(10.dp))
             SecondaryButton("Add another device", onAddAnother)
             Spacer(Modifier.height(10.dp))

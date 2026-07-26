@@ -29,6 +29,7 @@ import com.circuitflip.flipledger.presentation.components.ChipGroup
 import com.circuitflip.flipledger.presentation.components.FieldLabel
 import com.circuitflip.flipledger.presentation.components.FlipCard
 import com.circuitflip.flipledger.presentation.components.FlipTextField
+import com.circuitflip.flipledger.presentation.components.FlipTopBar
 import com.circuitflip.flipledger.presentation.components.IconBlob
 import com.circuitflip.flipledger.presentation.components.LinkButton
 import com.circuitflip.flipledger.presentation.components.PrimaryButton
@@ -42,7 +43,7 @@ import com.circuitflip.flipledger.presentation.theme.FlipTheme
 fun AddDevice1Screen(vm: AddDeviceViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
     val d by vm.draft.collectAsState()
     val errors by vm.fieldErrors.collectAsState()
-    WizardShell(1, "What are you adding?", null, onContinue = onContinue, onBack = onBack, showBack = false) {
+    WizardShell(1, "What are you adding?", null, onContinue = onContinue, onBack = onBack) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             DeviceCategory.entries.take(3).forEach { cat -> CategoryCard(cat, d.category == cat, { vm.setCategory(cat) }, Modifier.weight(1f)) }
         }
@@ -198,21 +199,19 @@ private fun WizardShell(
     continueLabel: String = "Continue",
     continueEnabled: Boolean = true,
     loading: Boolean = false,
-    showBack: Boolean = true,
     onContinue: () -> Unit,
     onBack: () -> Unit,
     body: @Composable () -> Unit,
 ) {
     ScreenScaffold {
+        FlipTopBar(title = "Add device", onBack = onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp)) {
-            Spacer(Modifier.height(16.dp))
             WizardHeader(step, 4, title, subtitle)
             Spacer(Modifier.height(24.dp))
             body()
         }
         Column(Modifier.padding(24.dp)) {
             PrimaryButton(continueLabel, onContinue, enabled = continueEnabled, loading = loading)
-            if (showBack) { Spacer(Modifier.height(4.dp)); LinkButton("Back", onBack, Modifier.fillMaxWidth()) }
         }
     }
 }

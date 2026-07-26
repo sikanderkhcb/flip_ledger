@@ -8,6 +8,7 @@ import com.circuitflip.flipledger.domain.repository.InventoryRepository
 import com.circuitflip.flipledger.domain.repository.ProfileRepository
 import com.circuitflip.flipledger.domain.repository.SalesRepository
 import com.circuitflip.flipledger.domain.repository.SessionState
+import com.circuitflip.flipledger.domain.repository.SubscriptionRepository
 import com.circuitflip.flipledger.domain.util.FormValidation
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -34,6 +35,7 @@ class AuthRepositoryImpl(
     private val profileRepository: ProfileRepository,
     private val inventoryRepository: InventoryRepository,
     private val salesRepository: SalesRepository,
+    private val subscriptionRepository: SubscriptionRepository,
 ) : AuthRepository {
 
     override val isAuthenticated: Flow<Boolean> =
@@ -160,6 +162,7 @@ class AuthRepositoryImpl(
         profileRepository.clearCache()
         inventoryRepository.clearCache()
         salesRepository.clearCache()
+        subscriptionRepository.clearCache()
     }
 
     private fun mapAuthError(t: Throwable): AppError {

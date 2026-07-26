@@ -59,7 +59,7 @@ class AddCostViewModel(
         }
         val id = store.selectedDeviceId
         if (id == null) {
-            _error.value = "Choose a device before adding a cost."
+            _error.value = "Choose a device before adding an expense."
             return
         }
         _submitting.value = true

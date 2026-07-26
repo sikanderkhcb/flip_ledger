@@ -5,6 +5,7 @@ import com.circuitflip.flipledger.core.DataResult
 import com.circuitflip.flipledger.domain.model.Cost
 import com.circuitflip.flipledger.domain.model.Device
 import com.circuitflip.flipledger.domain.model.DeviceStatus
+import com.circuitflip.flipledger.domain.model.DeviceCareDraft
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -22,6 +23,8 @@ interface InventoryRepository {
     suspend fun addDevice(device: Device): DataResult<Device>
 
     suspend fun updateStatus(deviceId: String, status: DeviceStatus): DataResult<Unit>
+
+    suspend fun updateDeviceCare(deviceId: String, care: DeviceCareDraft): DataResult<Unit>
 
     suspend fun addCost(deviceId: String, cost: Cost): DataResult<Unit>
 

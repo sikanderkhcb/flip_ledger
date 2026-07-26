@@ -1,0 +1,21 @@
+appId: com.apple.mobilesafari
+---
+- tapOn:
+    text: "1234 1234 1234 1234"
+- inputText: "4242424242424242"
+- tapOn:
+    text: "MM / YY"
+- inputText: "1234"
+- tapOn:
+    text: "CVC"
+- inputText: "123"
+- tapOn:
+    text: "Full name on card"
+- inputText: "FlipLedger QA"
+- hideKeyboard
+- swipe:
+    start: "50%,75%"
+    end: "50%,25%"
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: stripe-card-details

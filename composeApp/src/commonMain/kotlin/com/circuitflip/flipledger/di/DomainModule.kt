@@ -11,14 +11,18 @@ import com.circuitflip.flipledger.domain.usecase.ObserveDeviceUseCase
 import com.circuitflip.flipledger.domain.usecase.ObserveInventoryUseCase
 import com.circuitflip.flipledger.domain.usecase.ObserveSalesUseCase
 import com.circuitflip.flipledger.domain.usecase.UpdateDeviceStatusUseCase
+import com.circuitflip.flipledger.domain.usecase.UpdateDeviceCareUseCase
+import com.circuitflip.flipledger.domain.usecase.DeleteDeviceUseCase
 import org.koin.dsl.module
 
 /** Use case factories. Stateless, so plain factories are fine. */
 val domainModule = module {
     factory { ObserveInventoryUseCase(get()) }
     factory { ObserveDeviceUseCase(get()) }
-    factory { AddDeviceUseCase(get()) }
+    factory { AddDeviceUseCase(get(), get()) }
     factory { UpdateDeviceStatusUseCase(get()) }
+    factory { UpdateDeviceCareUseCase(get()) }
+    factory { DeleteDeviceUseCase(get()) }
     factory { AddCostUseCase(get()) }
     factory { ObserveSalesUseCase(get()) }
     factory { CompleteSaleUseCase(get()) }

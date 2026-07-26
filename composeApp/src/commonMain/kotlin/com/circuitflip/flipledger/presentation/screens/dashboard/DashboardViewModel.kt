@@ -4,6 +4,9 @@ import com.circuitflip.flipledger.domain.model.AttentionItem
 import com.circuitflip.flipledger.domain.model.BusinessProfile
 import com.circuitflip.flipledger.domain.model.DashboardMetrics
 import com.circuitflip.flipledger.domain.model.Sale
+import com.circuitflip.flipledger.domain.model.CategoryBars
+import com.circuitflip.flipledger.domain.model.CategoryCount
+import com.circuitflip.flipledger.domain.model.DeviceCategory
 import com.circuitflip.flipledger.domain.repository.ProfileRepository
 import com.circuitflip.flipledger.domain.usecase.GetAttentionItemsUseCase
 import com.circuitflip.flipledger.domain.usecase.GetDashboardMetricsUseCase
@@ -22,6 +25,8 @@ data class DashboardUiState(
     val metrics: DashboardMetrics? = null,
     val attention: List<AttentionItem> = emptyList(),
     val recentSales: List<Sale> = emptyList(),
+    val categoryCounts: List<CategoryCount> = emptyList(),
+    val categoryBars: List<CategoryBars> = emptyList(),
     val error: String? = null,
 )
 
@@ -50,8 +55,32 @@ class DashboardViewModel(
                 metrics = getMetrics(inventory, sales),
                 attention = getAttention(inventory),
                 recentSales = sales.take(3),
+                categoryCounts = categoryCounts(inventory, sales),
+                categoryBars = categoryBars(inventory, sales),
                 error = (inventoryError ?: salesError)?.userMessage(),
             )
         }.onEach { _state.value = it }.launchIn(scope)
+    }
+
+    private fun categoryCounts(inventory: List<com.circuitflip.flipledger.domain.model.Device>, sales: List<Sale>): List<CategoryCount> =
+        DeviceCategory.entries.map { category ->
+            CategoryCount(category.label, inventory.count { it.category == category } + sales.count { categoryFor(it.model) == category })
+        }.filter { it.count > 0 }
+
+    private fun categoryBars(inventory: List<com.circuitflip.flipledger.domain.model.Device>, sales: List<Sale>): List<CategoryBars> =
+        DeviceCategory.entries.map { category ->
+            CategoryBars(
+                category.label,
+                inventory.count { it.category == category } + sales.count { categoryFor(it.model) == category },
+                sales.count { categoryFor(it.model) == category },
+            )
+        }.filter { it.bought > 0 || it.sold > 0 }
+
+    private fun categoryFor(model: String): DeviceCategory = when {
+        Regex("iphone|galaxy|pixel|phone", RegexOption.IGNORE_CASE).containsMatchIn(model) -> DeviceCategory.PHONE
+        Regex("macbook|laptop|thinkpad", RegexOption.IGNORE_CASE).containsMatchIn(model) -> DeviceCategory.LAPTOP
+        Regex("ipad|tablet", RegexOption.IGNORE_CASE).containsMatchIn(model) -> DeviceCategory.TABLET
+        Regex("xbox|switch|playstation|ps5|steam deck", RegexOption.IGNORE_CASE).containsMatchIn(model) -> DeviceCategory.GAMING
+        else -> DeviceCategory.ACCESSORY
     }
 }

@@ -6,6 +6,8 @@ import com.circuitflip.flipledger.domain.model.Sale
 import com.circuitflip.flipledger.domain.usecase.GetReportMetricsUseCase
 import com.circuitflip.flipledger.domain.usecase.ObserveInventoryUseCase
 import com.circuitflip.flipledger.domain.usecase.ObserveSalesUseCase
+import com.circuitflip.flipledger.domain.repository.ProfileRepository
+import com.circuitflip.flipledger.domain.model.WorkspaceType
 import com.circuitflip.flipledger.domain.util.Dates
 import com.circuitflip.flipledger.presentation.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +21,7 @@ class ReportsViewModel(
     observeInventory: ObserveInventoryUseCase,
     observeSales: ObserveSalesUseCase,
     getReportMetrics: GetReportMetricsUseCase,
+    profileRepository: ProfileRepository,
 ) : BaseViewModel() {
     private val _metrics = MutableStateFlow<List<ReportMetric>>(emptyList())
     val metrics = _metrics.asStateFlow()
@@ -27,13 +30,17 @@ class ReportsViewModel(
 
     private var devices: List<Device> = emptyList()
     private var sales: List<Sale> = emptyList()
+    private var workspaceType = WorkspaceType.SOLO
+    private var partnerSplit = 0
     private val period = Dates.today()
     val periodLabel: String = Dates.monthLabel(period.year, period.monthNumber)
 
     init {
-        combine(observeInventory(), observeSales()) { inv, s ->
+        combine(observeInventory(), observeSales(), profileRepository.observeProfile()) { inv, s, profile ->
             devices = inv
             sales = s
+            workspaceType = profile.workspaceType
+            partnerSplit = profile.splitPartner
             getReportMetrics(inv, salesInPeriod(s))
         }.onEach { _metrics.value = it }.launchIn(scope)
         combine(observeInventory.error, observeSales.error) { inventoryError, salesError ->
@@ -44,13 +51,13 @@ class ReportsViewModel(
     /** Builds a CSV of every recorded sale and every active-inventory cost. */
     fun buildCsv(): String = buildString {
         appendLine("SALES")
-        appendLine("id,model,sold_date,channel,revenue,cost,fees,net_profit,margin_percent,days_held")
+        appendLine("device_name,buy_price,sale_price,expenses,partner_settlement,profit,date_sold,date_bought,fees,channel,customer_name,customer_email,days_held")
         salesInPeriod(sales).forEach { s ->
             appendLine(
                 listOf(
-                    s.id, s.model, s.soldDate, s.channel?.label ?: "",
-                    money(s.revenueCents), money(s.costCents), money(s.feesCents),
-                    money(s.netProfitCents), (s.margin * 100).toInt().toString(), s.daysHeld.toString(),
+                    s.model, money(s.purchasePriceCents), money(s.revenueCents), money(s.expensesCents),
+                    money(partnerSettlement(s)), money(s.netProfitCents), s.soldDate, s.purchaseDate,
+                    money(s.feesCents), s.channel?.label ?: "", s.customerName, s.customerEmail, s.daysHeld.toString(),
                 ).joinToString(",") { csv(it) },
             )
         }
@@ -67,6 +74,9 @@ class ReportsViewModel(
             }
         }
     }
+
+    private fun partnerSettlement(sale: Sale): Long =
+        if (workspaceType == WorkspaceType.PARTNER) (sale.netProfitCents * partnerSplit / 100.0).toLong() else 0L
 
     /** cents → plain decimal string with no symbol/grouping, safe for CSV. */
     private fun money(cents: Long): String {

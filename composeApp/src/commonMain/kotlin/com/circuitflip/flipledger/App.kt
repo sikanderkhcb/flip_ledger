@@ -1,22 +1,16 @@
 package com.circuitflip.flipledger
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.circuitflip.flipledger.domain.model.Entitlements
-import com.circuitflip.flipledger.domain.usecase.ObserveInventoryUseCase
 import com.circuitflip.flipledger.domain.util.Money
 import com.circuitflip.flipledger.presentation.AppViewModel
 import com.circuitflip.flipledger.presentation.StartDestination
@@ -26,6 +20,8 @@ import com.circuitflip.flipledger.presentation.components.FlipBottomBar
 import com.circuitflip.flipledger.presentation.navigation.Navigator
 import com.circuitflip.flipledger.presentation.navigation.Route
 import com.circuitflip.flipledger.presentation.navigation.SystemBackHandler
+import com.circuitflip.flipledger.presentation.navigation.navigationTransform
+import com.circuitflip.flipledger.presentation.navigation.prefersReducedMotion
 import com.circuitflip.flipledger.presentation.rememberViewModel
 import com.circuitflip.flipledger.presentation.screens.addcost.AddCostScreen
 import com.circuitflip.flipledger.presentation.screens.addcost.AddCostViewModel
@@ -38,6 +34,7 @@ import com.circuitflip.flipledger.presentation.screens.adddevice.DeviceAddedScre
 import com.circuitflip.flipledger.presentation.screens.auth.AuthScreen
 import com.circuitflip.flipledger.presentation.screens.dashboard.DashboardScreen
 import com.circuitflip.flipledger.presentation.screens.devicedetail.DeviceDetailScreen
+import com.circuitflip.flipledger.presentation.screens.devicecare.DeviceCareScreen
 import com.circuitflip.flipledger.presentation.screens.inventory.InventoryScreen
 import com.circuitflip.flipledger.presentation.screens.reports.ReportsScreen
 import com.circuitflip.flipledger.presentation.screens.sale.Sale1Screen
@@ -45,6 +42,7 @@ import com.circuitflip.flipledger.presentation.screens.sale.Sale2Screen
 import com.circuitflip.flipledger.presentation.screens.sale.Sale3Screen
 import com.circuitflip.flipledger.presentation.screens.sale.SaleCompleteScreen
 import com.circuitflip.flipledger.presentation.screens.sale.SaleViewModel
+import com.circuitflip.flipledger.presentation.screens.invoice.InvoiceScreen
 import com.circuitflip.flipledger.presentation.screens.saleshistory.SalesHistoryScreen
 import com.circuitflip.flipledger.presentation.screens.settings.SettingsScreen
 import com.circuitflip.flipledger.presentation.screens.settlement.SettlementScreen
@@ -54,6 +52,7 @@ import com.circuitflip.flipledger.presentation.screens.setup.Setup3Screen
 import com.circuitflip.flipledger.presentation.screens.setup.SetupViewModel
 import com.circuitflip.flipledger.presentation.screens.splash.SplashScreen
 import com.circuitflip.flipledger.presentation.screens.subscription.SubscriptionScreen
+import com.circuitflip.flipledger.presentation.screens.subscription.SubscriptionViewModel
 import com.circuitflip.flipledger.presentation.screens.welcome.WelcomeScreen
 import com.circuitflip.flipledger.presentation.theme.FlipLedgerTheme
 import com.circuitflip.flipledger.presentation.theme.FlipTheme
@@ -86,20 +85,28 @@ private fun AppNavHost(start: StartDestination) {
     val koin = getKoin()
     val navigator = remember { Navigator(start = Route.Splash) }
     val store = remember { koin.get<WizardStore>() }
+    val reduceMotion = prefersReducedMotion()
 
     // Shared flow ViewModels — one instance for the whole session.
     val setupVm = rememberViewModel<SetupViewModel>()
     val addDeviceVm = rememberViewModel<AddDeviceViewModel>()
     val saleVm = rememberViewModel<SaleViewModel>()
     val addCostVm = rememberViewModel<AddCostViewModel>()
+    val subscriptionVm = rememberViewModel<SubscriptionViewModel>()
+    val subscriptionState by subscriptionVm.state.collectAsState()
 
-    // Free-plan gate: block adding a device once active inventory hits the limit and prompt to
-    // upgrade. (When Stripe billing lands, exempt Pro users here.)
-    val observeInventory = remember { koin.get<ObserveInventoryUseCase>() }
-    val activeDevices by observeInventory().collectAsState(initial = emptyList())
-    var showUpgradeDialog by remember { mutableStateOf(false) }
-    val gateAddDevice: (() -> Unit) -> Unit = { proceed ->
-        if (activeDevices.size >= Entitlements.FREE_DEVICE_LIMIT) showUpgradeDialog = true else proceed()
+    val openAddDevice: () -> Unit = {
+        subscriptionVm.requestAddDevice(
+            onAllowed = {
+                addDeviceVm.start()
+                navigator.push(Route.AddDevice1)
+            },
+            onLimitReached = {
+                if (navigator.current != Route.Subscription) {
+                    navigator.push(Route.Subscription)
+                }
+            },
+        )
     }
 
     // Add-device submit and sale completion resolve asynchronously; advance when they land.
@@ -124,10 +131,12 @@ private fun AppNavHost(start: StartDestination) {
                 if (!atEntry) navigator.resetTo(Route.Welcome)
             }
             StartDestination.HOME -> {
-                if (atEntry) navigator.resetTo(Route.Dashboard)
+                if (atEntry && navigator.current !is Route.Splash) {
+                    navigator.resetTo(Route.Dashboard)
+                }
             }
             StartDestination.ONBOARDING -> {
-                if (atEntry) {
+                if (atEntry && navigator.current !is Route.Splash) {
                     setupVm.start()
                     navigator.resetTo(Route.Setup1)
                 }
@@ -151,8 +160,32 @@ private fun AppNavHost(start: StartDestination) {
 
     Column(Modifier.fillMaxSize()) {
       Box(Modifier.weight(1f)) {
-        when (val route = navigator.current) {
-        Route.Splash -> SplashScreen(onContinue = { navigator.replace(Route.Welcome) })
+        AnimatedContent(
+            targetState = navigator.current,
+            transitionSpec = {
+                navigationTransform(
+                    direction = navigator.direction,
+                    reduceMotion = reduceMotion,
+                )
+            },
+            modifier = Modifier.fillMaxSize(),
+            label = "Screen navigation",
+        ) { route ->
+          when (route) {
+        Route.Splash -> SplashScreen(
+            isReady = start != StartDestination.LOADING,
+            onFinished = {
+                when (start) {
+                    StartDestination.AUTH -> navigator.replace(Route.Welcome)
+                    StartDestination.HOME -> navigator.resetTo(Route.Dashboard)
+                    StartDestination.ONBOARDING -> {
+                        setupVm.start()
+                        navigator.resetTo(Route.Setup1)
+                    }
+                    StartDestination.LOADING -> Unit
+                }
+            },
+        )
 
         Route.Welcome -> WelcomeScreen(
             onGetStarted = { navigator.push(Route.Auth(signUp = true)) },
@@ -177,14 +210,17 @@ private fun AppNavHost(start: StartDestination) {
         Route.Setup3 -> Setup3Screen(setupVm, onFinish = { navigator.resetTo(Route.Dashboard) }, onBack = { navigator.back() })
 
         Route.Dashboard -> DashboardScreen(
-            onAddDevice = { gateAddDevice { addDeviceVm.start(); navigator.push(Route.AddDevice1) } },
+            subscriptionAccess = subscriptionState.access,
+            onAddDevice = openAddDevice,
             onSeeAllSales = { navigator.push(Route.SalesHistory) },
             onOpenDevice = { id -> navigator.push(Route.DeviceDetail(id)) },
             onOpenSettings = { navigator.push(Route.Settings) },
+            onOpenSubscription = { navigator.push(Route.Subscription) },
         )
 
         Route.Inventory -> InventoryScreen(
-            onAddDevice = { gateAddDevice { addDeviceVm.start(); navigator.push(Route.AddDevice1) } },
+            subscriptionAccess = subscriptionState.access,
+            onAddDevice = openAddDevice,
             onOpenDevice = { id -> navigator.push(Route.DeviceDetail(id)) },
         )
 
@@ -220,7 +256,10 @@ private fun AppNavHost(start: StartDestination) {
                     if (id != null) { navigator.resetTo(Route.Dashboard); navigator.push(Route.DeviceDetail(id)); addCostVm.start(); navigator.push(Route.AddCost) }
                     else navigator.resetTo(Route.Dashboard)
                 },
-                onAddAnother = { gateAddDevice { addDeviceVm.start(); navigator.resetTo(Route.Dashboard); navigator.push(Route.AddDevice1) } },
+                onAddAnother = {
+                    navigator.resetTo(Route.Dashboard)
+                    openAddDevice()
+                },
             )
         }
 
@@ -228,8 +267,11 @@ private fun AppNavHost(start: StartDestination) {
             deviceId = route.deviceId,
             onBack = { navigator.back() },
             onAddCost = { addCostVm.start(); navigator.push(Route.AddCost) },
+            onOpenCare = { navigator.push(Route.DeviceCare(route.deviceId)) },
             onStartSale = { saleVm.start(); navigator.push(Route.Sale1) },
         )
+
+        is Route.DeviceCare -> DeviceCareScreen(route.deviceId, onBack = { navigator.back() })
 
         Route.AddCost -> AddCostScreen(addCostVm, onBack = { navigator.back() }, onSaved = { navigator.back() })
 
@@ -248,12 +290,18 @@ private fun AppNavHost(start: StartDestination) {
         Route.SaleComplete -> SaleCompleteScreen(
             sale = store.lastSale,
             onViewSales = { navigator.resetTo(Route.Dashboard); navigator.push(Route.SalesHistory) },
-            onAddAnother = { gateAddDevice { addDeviceVm.start(); navigator.resetTo(Route.Dashboard); navigator.push(Route.AddDevice1) } },
+            onAddAnother = {
+                navigator.resetTo(Route.Dashboard)
+                openAddDevice()
+            },
             onDashboard = { navigator.resetTo(Route.Dashboard) },
+            onInvoice = { if (store.lastSale != null) navigator.push(Route.Invoice) },
         )
 
+        Route.Invoice -> store.lastSale?.let { InvoiceScreen(it, onBack = { navigator.back() }) }
+
         Route.SalesHistory -> SalesHistoryScreen(
-            onBack = { navigator.back() },
+            onBack = if (navigator.canGoBack) navigator::back else null,
             onOpenSettlement = { navigator.push(Route.Settlement) },
         )
 
@@ -262,16 +310,18 @@ private fun AppNavHost(start: StartDestination) {
         Route.Reports -> ReportsScreen(onBack = { navigator.back() })
 
         Route.Subscription -> SubscriptionScreen(
+            vm = subscriptionVm,
             onBack = { navigator.back() },
         )
 
         Route.Settings -> SettingsScreen(
-            onBack = { navigator.back() },
+            onBack = if (navigator.canGoBack) navigator::back else null,
             onOpenSettlement = { navigator.push(Route.Settlement) },
             onOpenReports = { navigator.push(Route.Reports) },
             onOpenSubscription = { navigator.push(Route.Subscription) },
             onSignedOut = { navigator.resetTo(Route.Welcome) },
         )
+          }
         }
       }
       activeTab?.let { tab ->
@@ -285,29 +335,5 @@ private fun AppNavHost(start: StartDestination) {
               if (navigator.current != target) navigator.resetTo(target)
           })
       }
-    }
-
-    if (showUpgradeDialog) {
-        val colors = FlipTheme.colors
-        AlertDialog(
-            onDismissRequest = { showUpgradeDialog = false },
-            title = { Text("Free plan limit reached", style = FlipTheme.typography.headingM, color = colors.textDefault) },
-            text = {
-                Text(
-                    "The Free plan tracks up to ${Entitlements.FREE_DEVICE_LIMIT} active devices. " +
-                        "Sell one or upgrade to add more.",
-                    style = FlipTheme.typography.bodyM, color = colors.textWeaker,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showUpgradeDialog = false; navigator.push(Route.Subscription) }) {
-                    Text("Upgrade", color = colors.primary)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showUpgradeDialog = false }) { Text("Not now", color = colors.textDefault) }
-            },
-            containerColor = colors.backgroundDefault,
-        )
     }
 }
