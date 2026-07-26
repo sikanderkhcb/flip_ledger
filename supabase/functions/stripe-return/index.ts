@@ -40,6 +40,12 @@ Deno.serve((request) => {
   <script>window.setTimeout(() => { window.location.href = ${JSON.stringify(appUrl)}; }, 350);</script>
 </body>
 </html>`,
-    { headers: { "Content-Type": "text/html; charset=utf-8" } },
+    {
+      headers: new Headers({
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+      }),
+    },
   );
 });

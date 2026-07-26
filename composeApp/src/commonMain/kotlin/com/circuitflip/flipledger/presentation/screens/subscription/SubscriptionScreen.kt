@@ -168,7 +168,7 @@ fun SubscriptionScreen(
                     enabled = !state.actionLoading,
                 )
                 Text(
-                    "Checkout opens in your browser. Return here and refresh after payment.",
+                    "Checkout opens in a secure browser window. Return here and refresh after payment.",
                     style = FlipTheme.typography.caption,
                     color = colors.textWeakest,
                 )

@@ -1,0 +1,11 @@
+appId: com.apple.mobilesafari
+---
+- pressKey: Enter
+- tapOn:
+    text: "Payment method"
+- swipe:
+    start: "50%,75%"
+    end: "50%,25%"
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: stripe-ready-to-submit
