@@ -4,12 +4,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.circuitflip.flipledger.domain.model.Entitlements
+import com.circuitflip.flipledger.domain.usecase.ObserveInventoryUseCase
 import com.circuitflip.flipledger.domain.util.Money
 import com.circuitflip.flipledger.presentation.AppViewModel
 import com.circuitflip.flipledger.presentation.StartDestination
@@ -86,6 +93,15 @@ private fun AppNavHost(start: StartDestination) {
     val saleVm = rememberViewModel<SaleViewModel>()
     val addCostVm = rememberViewModel<AddCostViewModel>()
 
+    // Free-plan gate: block adding a device once active inventory hits the limit and prompt to
+    // upgrade. (When Stripe billing lands, exempt Pro users here.)
+    val observeInventory = remember { koin.get<ObserveInventoryUseCase>() }
+    val activeDevices by observeInventory().collectAsState(initial = emptyList())
+    var showUpgradeDialog by remember { mutableStateOf(false) }
+    val gateAddDevice: (() -> Unit) -> Unit = { proceed ->
+        if (activeDevices.size >= Entitlements.FREE_DEVICE_LIMIT) showUpgradeDialog = true else proceed()
+    }
+
     // Add-device submit and sale completion resolve asynchronously; advance when they land.
     val added by addDeviceVm.submitted.collectAsState()
     LaunchedEffect(added) { if (added && navigator.current is Route.AddDevice4) navigator.push(Route.DeviceAdded) }
@@ -161,14 +177,14 @@ private fun AppNavHost(start: StartDestination) {
         Route.Setup3 -> Setup3Screen(setupVm, onFinish = { navigator.resetTo(Route.Dashboard) }, onBack = { navigator.back() })
 
         Route.Dashboard -> DashboardScreen(
-            onAddDevice = { addDeviceVm.start(); navigator.push(Route.AddDevice1) },
+            onAddDevice = { gateAddDevice { addDeviceVm.start(); navigator.push(Route.AddDevice1) } },
             onSeeAllSales = { navigator.push(Route.SalesHistory) },
             onOpenDevice = { id -> navigator.push(Route.DeviceDetail(id)) },
             onOpenSettings = { navigator.push(Route.Settings) },
         )
 
         Route.Inventory -> InventoryScreen(
-            onAddDevice = { addDeviceVm.start(); navigator.push(Route.AddDevice1) },
+            onAddDevice = { gateAddDevice { addDeviceVm.start(); navigator.push(Route.AddDevice1) } },
             onOpenDevice = { id -> navigator.push(Route.DeviceDetail(id)) },
         )
 
@@ -204,7 +220,7 @@ private fun AppNavHost(start: StartDestination) {
                     if (id != null) { navigator.resetTo(Route.Dashboard); navigator.push(Route.DeviceDetail(id)); addCostVm.start(); navigator.push(Route.AddCost) }
                     else navigator.resetTo(Route.Dashboard)
                 },
-                onAddAnother = { addDeviceVm.start(); navigator.resetTo(Route.Dashboard); navigator.push(Route.AddDevice1) },
+                onAddAnother = { gateAddDevice { addDeviceVm.start(); navigator.resetTo(Route.Dashboard); navigator.push(Route.AddDevice1) } },
             )
         }
 
@@ -232,7 +248,7 @@ private fun AppNavHost(start: StartDestination) {
         Route.SaleComplete -> SaleCompleteScreen(
             sale = store.lastSale,
             onViewSales = { navigator.resetTo(Route.Dashboard); navigator.push(Route.SalesHistory) },
-            onAddAnother = { addDeviceVm.start(); navigator.resetTo(Route.Dashboard); navigator.push(Route.AddDevice1) },
+            onAddAnother = { gateAddDevice { addDeviceVm.start(); navigator.resetTo(Route.Dashboard); navigator.push(Route.AddDevice1) } },
             onDashboard = { navigator.resetTo(Route.Dashboard) },
         )
 
@@ -269,5 +285,29 @@ private fun AppNavHost(start: StartDestination) {
               if (navigator.current != target) navigator.resetTo(target)
           })
       }
+    }
+
+    if (showUpgradeDialog) {
+        val colors = FlipTheme.colors
+        AlertDialog(
+            onDismissRequest = { showUpgradeDialog = false },
+            title = { Text("Free plan limit reached", style = FlipTheme.typography.headingM, color = colors.textDefault) },
+            text = {
+                Text(
+                    "The Free plan tracks up to ${Entitlements.FREE_DEVICE_LIMIT} active devices. " +
+                        "Sell one or upgrade to add more.",
+                    style = FlipTheme.typography.bodyM, color = colors.textWeaker,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showUpgradeDialog = false; navigator.push(Route.Subscription) }) {
+                    Text("Upgrade", color = colors.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUpgradeDialog = false }) { Text("Not now", color = colors.textDefault) }
+            },
+            containerColor = colors.backgroundDefault,
+        )
     }
 }

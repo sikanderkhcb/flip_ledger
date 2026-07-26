@@ -37,7 +37,7 @@ import com.circuitflip.flipledger.presentation.theme.Radius
 fun SubscriptionScreen(onBack: () -> Unit) {
     val colors = FlipTheme.colors
     val plans = listOf(
-        SubscriptionPlan("Free", "$0", listOf("Up to 10 active devices", "Basic profit tracking")),
+        SubscriptionPlan("Free", "$0", listOf("Up to 5 active devices", "Basic profit tracking")),
         SubscriptionPlan("Solo Pro", "$9/mo", listOf("Unlimited devices", "Full profit tracking", "CSV export"), highlighted = true),
         SubscriptionPlan("Partner Pro", "$19/mo", listOf("Everything in Solo Pro", "Partner settlements", "Evidence vault")),
     )
