@@ -33,9 +33,9 @@ import com.circuitflip.flipledger.presentation.components.StatusPill
 import com.circuitflip.flipledger.presentation.rememberViewModel
 import com.circuitflip.flipledger.presentation.theme.FlipTheme
 
-/** 14 · Device Detail — hero stats, overview, costs breakdown, timeline, status action, add cost, sell. */
+/** 14 · Device Detail — hero stats, overview, expenses breakdown, timeline, status action, add expense, sell. */
 @Composable
-fun DeviceDetailScreen(deviceId: String, onBack: () -> Unit, onAddCost: () -> Unit, onStartSale: () -> Unit) {
+fun DeviceDetailScreen(deviceId: String, onBack: () -> Unit, onAddCost: () -> Unit, onOpenCare: () -> Unit, onStartSale: () -> Unit) {
     val vm = rememberViewModel<DeviceDetailViewModel>(key = deviceId)
     LaunchedEffect(deviceId) { vm.load(deviceId) }
     val state by vm.state.collectAsState()
@@ -71,16 +71,21 @@ fun DeviceDetailScreen(deviceId: String, onBack: () -> Unit, onAddCost: () -> Un
                 }
                 Spacer(Modifier.height(20.dp))
 
-                // Costs
+                // Expenses
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Costs", style = FlipTheme.typography.headingM, color = colors.textDefault)
-                    Text("+ Add cost", style = FlipTheme.typography.bodyM, color = colors.info, modifier = Modifier.clickable(onClick = onAddCost).padding(4.dp))
+                    Text("Expenses", style = FlipTheme.typography.headingM, color = colors.textDefault)
+                    Text("+ Add expense", style = FlipTheme.typography.bodyM, color = colors.info, modifier = Modifier.clickable(onClick = onAddCost).padding(4.dp))
                 }
                 Spacer(Modifier.height(8.dp))
                 FlipCard {
                     DetailRow("Purchase price", Money.format(device.purchasePriceCents))
                     device.costs.forEach { c -> HorizontalDivider(color = colors.borderDefault); DetailRow(c.type.label, Money.format(c.amountCents)) }
                 }
+                Spacer(Modifier.height(20.dp))
+
+                Text("Repair & warranty", style = FlipTheme.typography.headingM, color = colors.textDefault)
+                Spacer(Modifier.height(8.dp))
+                SecondaryButton("Manage repair & warranty", onOpenCare)
                 Spacer(Modifier.height(20.dp))
 
                 // Timeline
@@ -104,7 +109,7 @@ fun DeviceDetailScreen(deviceId: String, onBack: () -> Unit, onAddCost: () -> Un
             Column(Modifier.padding(20.dp)) {
                 PrimaryButton(vm.primaryActionLabel(device.status), onClick = { if (vm.onPrimaryAction(device.status)) onStartSale() }, loading = submitting)
                 Spacer(Modifier.height(10.dp))
-                SecondaryButton("Add cost", onAddCost)
+                SecondaryButton("Add expense", onAddCost)
                 state.error?.let {
                     Spacer(Modifier.height(8.dp))
                     Text(it, style = FlipTheme.typography.bodyS, color = colors.error)

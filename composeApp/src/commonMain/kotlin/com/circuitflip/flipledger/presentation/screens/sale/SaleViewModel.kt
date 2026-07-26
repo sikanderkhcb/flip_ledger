@@ -75,6 +75,10 @@ class SaleViewModel(
         updateField("price") { it.copy(price = v.filter { c -> c.isDigit() || c == '.' }) }
     fun setDate(v: String) = updateField("date") { it.copy(date = v) }
     fun setChannel(c: SalesChannel) = updateField("channel") { it.copy(channel = c) }
+    fun setCustomerName(v: String) = updateField("customerName") { it.copy(customerName = v) }
+    fun setCustomerEmail(v: String) = updateField("customerEmail") { it.copy(customerEmail = v) }
+    fun setCustomerPhone(v: String) = updateField("customerPhone") { it.copy(customerPhone = v) }
+    fun setCustomerAddress(v: String) = updateField("customerAddress") { it.copy(customerAddress = v) }
     fun setPlatformFee(v: String) = updateField("platformFee") { it.copy(platformFee = money(v)) }
     fun setPaymentFee(v: String) = updateField("paymentFee") { it.copy(paymentFee = money(v)) }
     fun setShipping(v: String) = updateField("shipping") { it.copy(shipping = money(v)) }

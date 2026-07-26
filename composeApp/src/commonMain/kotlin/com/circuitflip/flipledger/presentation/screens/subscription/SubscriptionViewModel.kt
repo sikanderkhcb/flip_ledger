@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 data class SubscriptionUiState(
@@ -20,6 +21,7 @@ data class SubscriptionUiState(
     val checkingDeviceLimit: Boolean = false,
     val checkoutTier: SubscriptionTier? = null,
     val externalUrl: String? = null,
+    val watchingReturn: Boolean = false,
     val error: String? = null,
 )
 
@@ -82,6 +84,7 @@ class SubscriptionViewModel(
         checkoutTier: SubscriptionTier? = null,
     ) {
         if (_state.value.actionLoading) return
+        val baseline = _state.value.access
         scope.launch {
             _state.value = _state.value.copy(
                 actionLoading = true,
@@ -90,7 +93,11 @@ class SubscriptionViewModel(
             )
             action()
                 .onSuccess { url ->
-                    _state.value = _state.value.copy(externalUrl = url)
+                    _state.value = _state.value.copy(
+                        externalUrl = url,
+                        watchingReturn = true,
+                    )
+                    watchForSubscriptionUpdate(baseline)
                 }
                 .onFailure { error ->
                     _state.value = _state.value.copy(error = error.userMessage())
@@ -99,6 +106,32 @@ class SubscriptionViewModel(
                 actionLoading = false,
                 checkoutTier = null,
             )
+        }
+    }
+
+    /** Poll briefly after checkout/portal return while Stripe's webhook updates Supabase. */
+    private fun watchForSubscriptionUpdate(baseline: SubscriptionAccess) {
+        scope.launch {
+            // Stripe's webhook can take a little while to reach Supabase, especially
+            // after cancelling at period end. Keep checking for up to one minute.
+            repeat(40) {
+                delay(1_500)
+                when (val result = repository.refresh()) {
+                    is DataResult.Success -> {
+                        val access = result.data
+                        _state.value = _state.value.copy(access = access)
+                        val changed = access.status != baseline.status ||
+                            access.tier != baseline.tier ||
+                            access.cancelAtPeriodEnd != baseline.cancelAtPeriodEnd
+                        if (changed) {
+                            _state.value = _state.value.copy(watchingReturn = false)
+                            return@launch
+                        }
+                    }
+                    is DataResult.Failure -> Unit
+                }
+            }
+            _state.value = _state.value.copy(watchingReturn = false)
         }
     }
 }

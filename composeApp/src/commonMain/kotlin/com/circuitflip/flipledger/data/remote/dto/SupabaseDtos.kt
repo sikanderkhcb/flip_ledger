@@ -43,6 +43,12 @@ data class DeviceDto(
     @SerialName("purchase_date") val purchaseDate: String = "",
     val status: String = "Purchased",
     @SerialName("days_held") val daysHeld: Int = 0,
+    @SerialName("repair_issue") val repairIssue: String = "",
+    @SerialName("repair_provider") val repairProvider: String = "",
+    @SerialName("repair_started_on") val repairStartedOn: String? = null,
+    @SerialName("repair_completed_on") val repairCompletedOn: String? = null,
+    @SerialName("warranty_provider") val warrantyProvider: String = "",
+    @SerialName("warranty_expires_on") val warrantyExpiresOn: String? = null,
 )
 
 @Serializable
@@ -67,6 +73,12 @@ data class SaleDto(
     @SerialName("cost_cents") val costCents: Long = 0,
     @SerialName("fees_cents") val feesCents: Long = 0,
     @SerialName("days_held") val daysHeld: Int = 0,
+    @SerialName("purchase_price_cents") val purchasePriceCents: Long = 0,
+    @SerialName("purchase_date") val purchaseDate: String = "",
+    @SerialName("customer_name") val customerName: String = "",
+    @SerialName("customer_email") val customerEmail: String = "",
+    @SerialName("customer_phone") val customerPhone: String = "",
+    @SerialName("customer_address") val customerAddress: String = "",
     // Read-only: the DB fills created_at (default now()); never send it on insert.
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     @SerialName("created_at") val createdAt: String? = null,
@@ -116,6 +128,12 @@ fun DeviceDto.toDomain(costs: List<Cost>): Device = Device(
     costs = costs,
     status = DeviceStatus.fromLabel(status),
     daysHeld = Dates.daysBetween(purchaseDate) ?: daysHeld,
+    repairIssue = repairIssue,
+    repairProvider = repairProvider,
+    repairStartedOn = repairStartedOn,
+    repairCompletedOn = repairCompletedOn,
+    warrantyProvider = warrantyProvider,
+    warrantyExpiresOn = warrantyExpiresOn,
 )
 
 fun CostDto.toDomain(): Cost = Cost(
@@ -136,6 +154,10 @@ fun SaleDto.toDomain(): Sale = Sale(
     costCents = costCents,
     feesCents = feesCents,
     daysHeld = daysHeld,
+    customerName = customerName,
+    customerEmail = customerEmail,
+    customerPhone = customerPhone,
+    customerAddress = customerAddress,
     createdAt = createdAt,
 )
 
@@ -172,6 +194,12 @@ fun Device.toDto(): DeviceDto = DeviceDto(
     purchaseDate = purchaseDate,
     status = status.label,
     daysHeld = daysHeld,
+    repairIssue = repairIssue,
+    repairProvider = repairProvider,
+    repairStartedOn = repairStartedOn,
+    repairCompletedOn = repairCompletedOn,
+    warrantyProvider = warrantyProvider,
+    warrantyExpiresOn = warrantyExpiresOn,
 )
 
 fun Cost.toDto(deviceId: String): CostDto = CostDto(
@@ -193,6 +221,12 @@ fun Sale.toDto(): SaleDto = SaleDto(
     costCents = costCents,
     feesCents = feesCents,
     daysHeld = daysHeld,
+    purchasePriceCents = purchasePriceCents,
+    purchaseDate = purchaseDate,
+    customerName = customerName,
+    customerEmail = customerEmail,
+    customerPhone = customerPhone,
+    customerAddress = customerAddress,
 )
 
 fun BusinessProfile.toDto(id: String): ProfileDto = ProfileDto(

@@ -77,6 +77,9 @@ enum class CostType(val label: String) {
     SHIPPING("Shipping"),
     PACKAGING("Packaging"),
     PLATFORM_FEE("Platform fee"),
+    TAX("Tax"),
+    PAYMENT_PROCESSING("Payment processing"),
+    ADVERTISING("Advertising"),
     OTHER("Other");
 
     companion object {

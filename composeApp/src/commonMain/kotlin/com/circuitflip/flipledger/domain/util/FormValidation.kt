@@ -17,6 +17,9 @@ object FormValidation {
     const val MAX_MODEL_LENGTH = 100
     const val MAX_STORAGE_LENGTH = 30
     const val MAX_NOTE_LENGTH = 200
+    const val MAX_EMAIL_LENGTH = 254
+    const val MAX_PHONE_LENGTH = 32
+    const val MAX_ADDRESS_LENGTH = 240
     const val MAX_MONEY_CENTS = 99_999_999_999L // $999,999,999.99
 
     private val emailPattern = Regex("""^[^\s@]+@[^\s@]+\.[^\s@]{2,}$""")
@@ -175,6 +178,12 @@ object FormValidation {
             put("date", "Sale date cannot be before the purchase date.")
         }
         if (draft.channel == null) put("channel", "Choose a sales channel.")
+        if (draft.customerName.length > MAX_NAME_LENGTH) put("customerName", "Customer name is too long.")
+        if (draft.customerEmail.isNotBlank() && !emailPattern.matches(draft.customerEmail.trim())) put("customerEmail", "Enter a valid email address.")
+        if (draft.customerEmail.length > MAX_EMAIL_LENGTH) put("customerEmail", "Email is too long.")
+        if (draft.customerPhone.length > MAX_PHONE_LENGTH) put("customerPhone", "Phone number is too long.")
+        if (draft.customerPhone.isNotBlank() && !phoneCharacters.matches(draft.customerPhone.trim())) put("customerPhone", "Enter a valid phone number.")
+        if (draft.customerAddress.length > MAX_ADDRESS_LENGTH) put("customerAddress", "Address is too long.")
 
         listOf(
             Triple("platformFee", "Platform fee", draft.platformFee),

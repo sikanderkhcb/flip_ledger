@@ -167,8 +167,15 @@ fun SubscriptionScreen(
                     onClick = vm::refresh,
                     enabled = !state.actionLoading,
                 )
+                if (state.watchingReturn) {
+                    Text(
+                        "Updating subscription status…",
+                        style = FlipTheme.typography.caption,
+                        color = colors.textWeaker,
+                    )
+                }
                 Text(
-                    "Checkout opens in a secure browser window. Return here and refresh after payment.",
+                    "Checkout opens in a secure browser window. Return here and your subscription status will update automatically.",
                     style = FlipTheme.typography.caption,
                     color = colors.textWeakest,
                 )

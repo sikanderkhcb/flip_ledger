@@ -6,6 +6,8 @@ import com.circuitflip.flipledger.domain.model.CostDraft
 import com.circuitflip.flipledger.domain.model.Device
 import com.circuitflip.flipledger.domain.model.DeviceDraft
 import com.circuitflip.flipledger.domain.model.DeviceStatus
+import com.circuitflip.flipledger.domain.model.DeviceCareDraft
+import com.circuitflip.flipledger.core.AppError
 import com.circuitflip.flipledger.domain.model.LockStatus
 import com.circuitflip.flipledger.domain.repository.InventoryRepository
 import com.circuitflip.flipledger.domain.repository.SubscriptionRepository
@@ -70,6 +72,20 @@ class AddDeviceUseCase(
 class UpdateDeviceStatusUseCase(private val repo: InventoryRepository) {
     suspend operator fun invoke(deviceId: String, status: DeviceStatus) =
         repo.updateStatus(deviceId, status)
+}
+
+class UpdateDeviceCareUseCase(private val repo: InventoryRepository) {
+    suspend operator fun invoke(deviceId: String, draft: DeviceCareDraft): DataResult<Unit> {
+        val dates = listOf(
+            "repairStartedOn" to draft.repairStartedOn,
+            "repairCompletedOn" to draft.repairCompletedOn,
+            "warrantyExpiresOn" to draft.warrantyExpiresOn,
+        )
+        dates.firstOrNull { it.second.isNotBlank() && Dates.parseIso(it.second) == null }?.let {
+            return DataResult.Failure(AppError.Validation(it.first, "Use YYYY-MM-DD."))
+        }
+        return repo.updateDeviceCare(deviceId, draft)
+    }
 }
 
 /** Validates and persists a cost from a [CostDraft]. */

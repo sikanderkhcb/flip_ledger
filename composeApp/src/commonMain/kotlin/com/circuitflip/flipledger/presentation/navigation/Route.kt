@@ -21,11 +21,13 @@ sealed interface Route {
     data object AddDevice4 : Route          // 12
     data object DeviceAdded : Route         // 13
     data class DeviceDetail(val deviceId: String) : Route  // 14
+    data class DeviceCare(val deviceId: String) : Route
     data object AddCost : Route             // 15
     data object Sale1 : Route               // 16
     data object Sale2 : Route               // 17
     data object Sale3 : Route               // 18
     data object SaleComplete : Route        // 19
+    data object Invoice : Route
     data object SalesHistory : Route        // 20
     data object Settlement : Route          // 21
     data object Reports : Route             // 22

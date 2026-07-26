@@ -25,7 +25,7 @@ import com.circuitflip.flipledger.presentation.components.PrimaryButton
 import com.circuitflip.flipledger.presentation.components.ScreenScaffold
 import com.circuitflip.flipledger.presentation.theme.FlipTheme
 
-/** 15 · Add Cost — cost type, amount, paid by, date, optional note. */
+/** 15 · Add Expense — category, amount, paid by, date, optional note. */
 @Composable
 fun AddCostScreen(vm: AddCostViewModel, onBack: () -> Unit, onSaved: () -> Unit) {
     LaunchedEffect(Unit) { vm.start() }
@@ -37,9 +37,9 @@ fun AddCostScreen(vm: AddCostViewModel, onBack: () -> Unit, onSaved: () -> Unit)
     LaunchedEffect(saved) { if (saved) onSaved() }
 
     ScreenScaffold {
-        FlipTopBar(title = "Add cost", onBack = onBack)
+        FlipTopBar(title = "Add expense", onBack = onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
-            FieldLabel("Cost type")
+            FieldLabel("Expense category")
             ChipGroup(CostType.entries, d.type, { it.label }, vm::setType)
             fieldErrors["type"]?.let {
                 Spacer(Modifier.height(8.dp))
@@ -80,6 +80,6 @@ fun AddCostScreen(vm: AddCostViewModel, onBack: () -> Unit, onSaved: () -> Unit)
             }
             Spacer(Modifier.height(16.dp))
         }
-        Column(Modifier.padding(20.dp)) { PrimaryButton("Save Cost", vm::save, loading = submitting) }
+        Column(Modifier.padding(20.dp)) { PrimaryButton("Save expense", vm::save, loading = submitting) }
     }
 }

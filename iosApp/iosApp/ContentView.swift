@@ -37,10 +37,6 @@ struct ContentView: View {
                 }
             }
         }
-        .onOpenURL { url in
-            guard url.scheme == "flipledger", url.host == "subscription" else { return }
-            CheckoutBrowser_iosKt.dismissCheckoutBrowser()
-        }
     }
 }
 

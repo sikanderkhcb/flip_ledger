@@ -9,6 +9,7 @@ import com.circuitflip.flipledger.presentation.screens.adddevice.AddDeviceViewMo
 import com.circuitflip.flipledger.presentation.screens.auth.AuthViewModel
 import com.circuitflip.flipledger.presentation.screens.dashboard.DashboardViewModel
 import com.circuitflip.flipledger.presentation.screens.devicedetail.DeviceDetailViewModel
+import com.circuitflip.flipledger.presentation.screens.devicecare.DeviceCareViewModel
 import com.circuitflip.flipledger.presentation.screens.inventory.InventoryViewModel
 import com.circuitflip.flipledger.presentation.screens.reports.ReportsViewModel
 import com.circuitflip.flipledger.presentation.screens.sale.SaleViewModel
@@ -34,11 +35,12 @@ val presentationModule = module {
     factory { InventoryViewModel(get()) }
     factory { AddDeviceViewModel(get(), get()) }
     factory { DeviceDetailViewModel(get(), get(), get()) }
+    factory { DeviceCareViewModel(get(), get(), get()) }
     factory { AddCostViewModel(get(), get()) }
     factory { SaleViewModel(get(), get(), get()) }
     factory { SalesHistoryViewModel(get()) }
     factory { SettlementViewModel(get(), get(), get()) }
-    factory { ReportsViewModel(get(), get(), get()) }
+    factory { ReportsViewModel(get(), get(), get(), get()) }
     factory { SettingsViewModel(get(), get(), get()) }
     factory { SubscriptionViewModel(get()) }
 }

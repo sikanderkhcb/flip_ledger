@@ -57,6 +57,16 @@ fun Sale1Screen(vm: SaleViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
         FieldLabel("Sales channel")
         ChipGroup(SalesChannel.entries, s.draft.channel, { it.label }, vm::setChannel)
         FieldError(s.fieldErrors["channel"])
+        Spacer(Modifier.height(24.dp))
+        Text("Customer details (optional)", style = FlipTheme.typography.headingM, color = FlipTheme.colors.textDefault)
+        Spacer(Modifier.height(12.dp))
+        FlipTextField(s.draft.customerName, vm::setCustomerName, "Customer name", placeholder = "Jordan Rivera", error = s.fieldErrors["customerName"])
+        Spacer(Modifier.height(12.dp))
+        FlipTextField(s.draft.customerEmail, vm::setCustomerEmail, "Email", placeholder = "customer@example.com", error = s.fieldErrors["customerEmail"])
+        Spacer(Modifier.height(12.dp))
+        FlipTextField(s.draft.customerPhone, vm::setCustomerPhone, "Phone", placeholder = "(555) 123-4567", error = s.fieldErrors["customerPhone"])
+        Spacer(Modifier.height(12.dp))
+        FlipTextField(s.draft.customerAddress, vm::setCustomerAddress, "Address", placeholder = "Optional billing address", error = s.fieldErrors["customerAddress"])
         s.error?.let { FieldError(it) }
     }
 }

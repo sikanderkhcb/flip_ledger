@@ -1,5 +1,7 @@
 package com.circuitflip.flipledger.domain.model
 
+import com.circuitflip.flipledger.domain.util.Dates
+
 /**
  * A single unit of resale inventory. This is the central aggregate of the app.
  *
@@ -22,12 +24,21 @@ data class Device(
     val costs: List<Cost>,
     val status: DeviceStatus,
     val daysHeld: Int,
+    val repairIssue: String = "",
+    val repairProvider: String = "",
+    val repairStartedOn: String? = null,
+    val repairCompletedOn: String? = null,
+    val warrantyProvider: String = "",
+    val warrantyExpiresOn: String? = null,
 ) {
     /** Total capital tied up in this device: purchase + all logged costs. */
     val investedCents: Long
         get() = purchasePriceCents + costs.sumOf { it.amountCents }
 
     val isAging: Boolean get() = daysHeld > AGING_THRESHOLD_DAYS
+
+    val warrantyDaysRemaining: Int?
+        get() = warrantyExpiresOn?.let { Dates.daysUntil(it) }
 
     companion object {
         const val AGING_THRESHOLD_DAYS = 30

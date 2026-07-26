@@ -34,6 +34,7 @@ import com.circuitflip.flipledger.presentation.screens.adddevice.DeviceAddedScre
 import com.circuitflip.flipledger.presentation.screens.auth.AuthScreen
 import com.circuitflip.flipledger.presentation.screens.dashboard.DashboardScreen
 import com.circuitflip.flipledger.presentation.screens.devicedetail.DeviceDetailScreen
+import com.circuitflip.flipledger.presentation.screens.devicecare.DeviceCareScreen
 import com.circuitflip.flipledger.presentation.screens.inventory.InventoryScreen
 import com.circuitflip.flipledger.presentation.screens.reports.ReportsScreen
 import com.circuitflip.flipledger.presentation.screens.sale.Sale1Screen
@@ -41,6 +42,7 @@ import com.circuitflip.flipledger.presentation.screens.sale.Sale2Screen
 import com.circuitflip.flipledger.presentation.screens.sale.Sale3Screen
 import com.circuitflip.flipledger.presentation.screens.sale.SaleCompleteScreen
 import com.circuitflip.flipledger.presentation.screens.sale.SaleViewModel
+import com.circuitflip.flipledger.presentation.screens.invoice.InvoiceScreen
 import com.circuitflip.flipledger.presentation.screens.saleshistory.SalesHistoryScreen
 import com.circuitflip.flipledger.presentation.screens.settings.SettingsScreen
 import com.circuitflip.flipledger.presentation.screens.settlement.SettlementScreen
@@ -265,8 +267,11 @@ private fun AppNavHost(start: StartDestination) {
             deviceId = route.deviceId,
             onBack = { navigator.back() },
             onAddCost = { addCostVm.start(); navigator.push(Route.AddCost) },
+            onOpenCare = { navigator.push(Route.DeviceCare(route.deviceId)) },
             onStartSale = { saleVm.start(); navigator.push(Route.Sale1) },
         )
+
+        is Route.DeviceCare -> DeviceCareScreen(route.deviceId, onBack = { navigator.back() })
 
         Route.AddCost -> AddCostScreen(addCostVm, onBack = { navigator.back() }, onSaved = { navigator.back() })
 
@@ -290,7 +295,10 @@ private fun AppNavHost(start: StartDestination) {
                 openAddDevice()
             },
             onDashboard = { navigator.resetTo(Route.Dashboard) },
+            onInvoice = { if (store.lastSale != null) navigator.push(Route.Invoice) },
         )
+
+        Route.Invoice -> store.lastSale?.let { InvoiceScreen(it, onBack = { navigator.back() }) }
 
         Route.SalesHistory -> SalesHistoryScreen(
             onBack = if (navigator.canGoBack) navigator::back else null,
