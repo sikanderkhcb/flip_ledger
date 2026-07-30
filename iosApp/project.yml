@@ -1,6 +1,6 @@
 name: iosApp
 options:
-  bundleIdPrefix: com.circuitflip.flipledger
+  bundleIdPrefix: com.codexpirit.flipledger
   deploymentTarget:
     iOS: "15.0"
   createIntermediateGroups: true
@@ -12,7 +12,7 @@ targets:
       - path: iosApp
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.circuitflip.flipledger
+        PRODUCT_BUNDLE_IDENTIFIER: com.codexpirit.flipledger
         INFOPLIST_FILE: iosApp/Info.plist
         CODE_SIGN_ENTITLEMENTS: iosApp/iosApp.entitlements
         SWIFT_VERSION: "5.0"

@@ -286,7 +286,7 @@
 					"-framework",
 					ComposeApp,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.circuitflip.flipledger;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codexpirit.flipledger;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;
@@ -315,7 +315,7 @@
 					"-framework",
 					ComposeApp,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.circuitflip.flipledger;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codexpirit.flipledger;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;
