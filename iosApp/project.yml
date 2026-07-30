@@ -14,6 +14,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.circuitflip.flipledger
         INFOPLIST_FILE: iosApp/Info.plist
+        CODE_SIGN_ENTITLEMENTS: iosApp/iosApp.entitlements
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
         SDKROOT: iphoneos
