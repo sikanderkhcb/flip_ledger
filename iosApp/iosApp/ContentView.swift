@@ -53,7 +53,7 @@ private struct StartupSplashView: View {
                     .frame(width: 104, height: 104)
                     .accessibilityHidden(true)
 
-                Text("FlipLedger")
+                Text("BlackInk")
                     .font(.system(size: 36, weight: .semibold, design: .serif))
                     .foregroundStyle(Color(red: 40 / 255, green: 40 / 255, blue: 41 / 255))
                     .padding(.top, 24)
@@ -67,6 +67,6 @@ private struct StartupSplashView: View {
             .padding(32)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("FlipLedger. Inventory and profit, clearly tracked.")
+        .accessibilityLabel("BlackInk. Inventory and profit, clearly tracked.")
     }
 }

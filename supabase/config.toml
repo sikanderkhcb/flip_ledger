@@ -5,3 +5,8 @@ verify_jwt = false
 
 [functions.stripe-return]
 verify_jwt = false
+
+# Triggered by a Database Webhook on auth.users INSERT, which carries no Supabase JWT.
+# The function authenticates the caller with the x-webhook-secret header instead.
+[functions.send-welcome-email]
+verify_jwt = false

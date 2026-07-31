@@ -11,7 +11,7 @@ appId: com.apple.mobilesafari
 - inputText: "123"
 - tapOn:
     text: "Full name on card"
-- inputText: "FlipLedger QA"
+- inputText: "BlackInk QA"
 - hideKeyboard
 - swipe:
     start: "50%,75%"

@@ -1,4 +1,4 @@
--- FlipLedger's reproducible Supabase schema.
+-- BlackInk's reproducible Supabase schema.
 -- Apply through the Supabase CLI after reviewing it against the target environment.
 
 create table if not exists public.profiles (

@@ -7,12 +7,21 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+// Firebase (Analytics + Crashlytics) is enabled only when google-services.json is present, so the
+// app still builds for anyone who clones without their own Firebase config. When absent, the
+// Telemetry facade falls back to a no-op at runtime.
+val firebaseEnabled = file("google-services.json").exists()
+if (firebaseEnabled) {
+    apply(plugin = libs.plugins.googleServices.get().pluginId)
+    apply(plugin = libs.plugins.firebaseCrashlytics.get().pluginId)
+}
+
 android {
-    namespace = "com.circuitflip.flipledger.android"
+    namespace = "com.blackink.app.android"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.circuitflip.flipledger"
+        applicationId = "com.blackink.app"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -46,4 +55,13 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.koin.android)
+
+    // Google Play In-App Review — native rating prompt behind the shared ReviewPrompter facade.
+    implementation(libs.play.review)
+    implementation(libs.play.review.ktx)
+
+    // Firebase — BOM aligns the module versions; Analytics + Crashlytics power the Telemetry facade.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 }

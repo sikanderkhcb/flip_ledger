@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Base app theme. Compose draws the real UI; this only styles the splash window. -->
-    <style name="Theme.FlipLedger" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Theme.BlackInk" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">#F9F7F7</item>
         <item name="android:windowBackground">#F9F7F7</item>
     </style>
