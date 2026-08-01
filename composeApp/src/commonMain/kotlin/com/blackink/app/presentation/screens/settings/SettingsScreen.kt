@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import com.blackink.app.domain.model.WorkspaceType
@@ -67,6 +68,7 @@ fun SettingsScreen(
     val colors = FlipTheme.colors
     val uriHandler = LocalUriHandler.current
     var showSignOutConfirm by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.signedOut) { if (state.signedOut) onSignedOut() }
 
@@ -159,6 +161,16 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(4.dp))
                 LinkButton(text = "Sign out", onClick = { showSignOutConfirm = true }, modifier = Modifier.fillMaxWidth())
+                Text(
+                    "Delete account",
+                    style = FlipTheme.typography.bodyM,
+                    color = colors.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !state.deleting) { showDeleteConfirm = true }
+                        .padding(vertical = 12.dp),
+                )
                 UiErrorEffect(state.error)
             }
         }
@@ -182,6 +194,33 @@ fun SettingsScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showSignOutConfirm = false }) {
+                        Text("Cancel", color = colors.textDefault)
+                    }
+                },
+                containerColor = colors.backgroundDefault,
+            )
+        }
+
+        if (showDeleteConfirm) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirm = false },
+                title = { Text("Delete account?", style = FlipTheme.typography.headingM, color = colors.textDefault) },
+                text = {
+                    Text(
+                        "This permanently deletes your account and all your inventory, sales, and " +
+                            "profit data. This can't be undone.",
+                        style = FlipTheme.typography.bodyM,
+                        color = colors.textWeaker,
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDeleteConfirm = false
+                        vm.deleteAccount()
+                    }) { Text("Delete", color = colors.error) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirm = false }) {
                         Text("Cancel", color = colors.textDefault)
                     }
                 },

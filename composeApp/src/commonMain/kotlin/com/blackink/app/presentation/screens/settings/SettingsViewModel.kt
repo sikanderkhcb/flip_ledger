@@ -18,6 +18,7 @@ data class SettingsUiState(
     val profile: BusinessProfile = BusinessProfile(),
     val isDark: Boolean = false,
     val signedOut: Boolean = false,
+    val deleting: Boolean = false,
     val error: String? = null,
 )
 
@@ -35,6 +36,7 @@ class SettingsViewModel(
                 profile = profile,
                 isDark = dark,
                 signedOut = _state.value.signedOut,
+                deleting = _state.value.deleting,
                 error = _state.value.error,
             )
         }.onEach { _state.value = it }.launchIn(scope)
@@ -46,5 +48,12 @@ class SettingsViewModel(
         authRepository.signOut()
             .onSuccess { _state.value = _state.value.copy(signedOut = true) }
             .onFailure { _state.value = _state.value.copy(error = it.userMessage()) }
+    }
+
+    fun deleteAccount() = scope.launch {
+        _state.value = _state.value.copy(deleting = true, error = null)
+        authRepository.deleteAccount()
+            .onSuccess { _state.value = _state.value.copy(deleting = false, signedOut = true) }
+            .onFailure { _state.value = _state.value.copy(deleting = false, error = it.userMessage()) }
     }
 }

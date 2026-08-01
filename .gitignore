@@ -24,3 +24,6 @@ DerivedData/
 # Supabase CLI local state
 supabase/.temp/
 .kotlin/
+keystore.properties
+*.keystore
+*.jks

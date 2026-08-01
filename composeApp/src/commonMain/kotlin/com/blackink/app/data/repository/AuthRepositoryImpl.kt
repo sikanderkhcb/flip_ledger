@@ -15,6 +15,7 @@ import com.blackink.app.domain.repository.SubscriptionRepository
 import com.blackink.app.domain.util.FormValidation
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.auth.providers.Apple
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.OtpType
@@ -200,6 +201,20 @@ class AuthRepositoryImpl(
         clearSessionData()
         Track.event("sign_out")
         Track.user(null)
+        DataResult.Success(Unit)
+    } catch (t: Throwable) {
+        DataResult.Failure(mapAuthError(t))
+    }
+
+    override suspend fun deleteAccount(): DataResult<Unit> = try {
+        // Edge function verifies the JWT and deletes the auth user; DB cascades remove all data.
+        client.functions.invoke("delete-account")
+        Track.event("account_deleted")
+        Track.user(null)
+        // The account is gone; the JWT is now invalid, so sign out locally (best-effort) to flip
+        // the session to unauthenticated and clear cached data.
+        runCatching { client.auth.signOut() }
+        clearSessionData()
         DataResult.Success(Unit)
     } catch (t: Throwable) {
         DataResult.Failure(mapAuthError(t))

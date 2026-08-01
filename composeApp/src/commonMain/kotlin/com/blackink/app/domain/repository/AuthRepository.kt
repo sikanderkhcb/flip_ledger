@@ -36,6 +36,9 @@ interface AuthRepository {
     suspend fun signInWithGoogle(identityToken: String): DataResult<Unit>
     suspend fun signOut(): DataResult<Unit>
 
+    /** Permanently deletes the signed-in user's account and all their data (Play requirement). */
+    suspend fun deleteAccount(): DataResult<Unit>
+
     /** Refreshes the profile's owner name from the signed-in user (metadata / email). */
     suspend fun syncProfileName()
 }
