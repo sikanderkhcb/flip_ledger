@@ -77,6 +77,16 @@ class AuthViewModel(private val authRepository: AuthRepository) : BaseViewModel(
         }
     }
 
+    /** Exchanges the native Apple identity token for a Supabase session. */
+    fun signInWithAppleToken(identityToken: String) {
+        _state.update { it.copy(loading = true) }
+        scope.launch {
+            authRepository.signInWithApple(identityToken)
+                .onSuccess { _state.update { it.copy(loading = false, success = true) } }
+                .onFailure { err -> _state.update { it.copy(loading = false, error = err.userMessage()) } }
+        }
+    }
+
     fun onSocialError(message: String) = _state.update { it.copy(loading = false, error = message) }
 
     fun startLoading() = _state.update { it.copy(loading = true, error = null) }

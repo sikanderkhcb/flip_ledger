@@ -24,6 +24,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.blackink.app
         INFOPLIST_FILE: iosApp/Info.plist
+        CODE_SIGN_ENTITLEMENTS: iosApp/iosApp.entitlements
         SWIFT_VERSION: "5.0"
         # Generate dSYMs so Firebase Crashlytics can symbolicate crash stack traces.
         DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
