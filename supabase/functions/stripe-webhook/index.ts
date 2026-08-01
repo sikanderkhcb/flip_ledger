@@ -6,6 +6,7 @@ import {
 } from "../_shared/clients.ts";
 import { jsonResponse, methodNotAllowed } from "../_shared/http.ts";
 import { syncSubscription } from "../_shared/subscriptions.ts";
+import { sendSubscriptionWelcomeEmail } from "../_shared/email.ts";
 
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
@@ -42,7 +43,17 @@ Deno.serve(async (request) => {
           ? session.subscription
           : session.subscription.id;
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        await syncSubscription(admin, subscription);
+        const { userId, tier, status } = await syncSubscription(admin, subscription);
+        // A completed subscription checkout is a fresh purchase (renewals use other events),
+        // so this is where the confirmation email belongs. Best-effort: a mail failure must not
+        // return 5xx, or Stripe would retry the event and re-run the sync.
+        if (status === "active" || status === "trialing") {
+          try {
+            await sendSubscriptionWelcomeEmail(admin, userId, tier);
+          } catch (mailError) {
+            console.error("subscription welcome email failed", mailError);
+          }
+        }
         break;
       }
       case "customer.subscription.created":

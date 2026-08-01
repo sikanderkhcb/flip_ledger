@@ -1,0 +1,137 @@
+package com.blackink.app.presentation.screens.subscription
+
+import com.blackink.app.core.DataResult
+import com.blackink.app.core.onFailure
+import com.blackink.app.core.onSuccess
+import com.blackink.app.domain.model.SubscriptionAccess
+import com.blackink.app.domain.model.SubscriptionTier
+import com.blackink.app.domain.repository.SubscriptionRepository
+import com.blackink.app.presentation.BaseViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+data class SubscriptionUiState(
+    val access: SubscriptionAccess = SubscriptionAccess(),
+    val loading: Boolean = true,
+    val actionLoading: Boolean = false,
+    val checkingDeviceLimit: Boolean = false,
+    val checkoutTier: SubscriptionTier? = null,
+    val externalUrl: String? = null,
+    val watchingReturn: Boolean = false,
+    val error: String? = null,
+)
+
+class SubscriptionViewModel(
+    private val repository: SubscriptionRepository,
+) : BaseViewModel() {
+
+    private val _state = MutableStateFlow(SubscriptionUiState())
+    val state = _state.asStateFlow()
+
+    init {
+        repository.observeAccess()
+            .onEach { access ->
+                _state.value = _state.value.copy(access = access, loading = false)
+            }
+            .launchIn(scope)
+    }
+
+    fun refresh() {
+        if (_state.value.actionLoading) return
+        scope.launch {
+            _state.value = _state.value.copy(actionLoading = true, error = null)
+            repository.refresh()
+                .onFailure { error ->
+                    _state.value = _state.value.copy(error = error.userMessage())
+                }
+            _state.value = _state.value.copy(actionLoading = false, loading = false)
+        }
+    }
+
+    fun startCheckout(tier: SubscriptionTier) = openExternal(
+        action = { repository.createCheckoutSession(tier) },
+        checkoutTier = tier,
+    )
+
+    fun manageSubscription() = openExternal(repository::createPortalSession)
+
+    fun consumeExternalUrl() {
+        _state.value = _state.value.copy(externalUrl = null)
+    }
+
+    fun requestAddDevice(
+        onAllowed: () -> Unit,
+        onLimitReached: () -> Unit,
+    ) {
+        if (_state.value.checkingDeviceLimit) return
+        scope.launch {
+            _state.value = _state.value.copy(checkingDeviceLimit = true)
+            val latest = when (val result = repository.refresh()) {
+                is DataResult.Success -> result.data
+                is DataResult.Failure -> _state.value.access
+            }
+            _state.value = _state.value.copy(checkingDeviceLimit = false)
+            if (latest.canAddDevice) onAllowed() else onLimitReached()
+        }
+    }
+
+    private fun openExternal(
+        action: suspend () -> DataResult<String>,
+        checkoutTier: SubscriptionTier? = null,
+    ) {
+        if (_state.value.actionLoading) return
+        val baseline = _state.value.access
+        scope.launch {
+            _state.value = _state.value.copy(
+                actionLoading = true,
+                checkoutTier = checkoutTier,
+                error = null,
+            )
+            action()
+                .onSuccess { url ->
+                    _state.value = _state.value.copy(
+                        externalUrl = url,
+                        watchingReturn = true,
+                    )
+                    watchForSubscriptionUpdate(baseline)
+                }
+                .onFailure { error ->
+                    _state.value = _state.value.copy(error = error.userMessage())
+                }
+            _state.value = _state.value.copy(
+                actionLoading = false,
+                checkoutTier = null,
+            )
+        }
+    }
+
+    /** Poll briefly after checkout/portal return while Stripe's webhook updates Supabase. */
+    private fun watchForSubscriptionUpdate(baseline: SubscriptionAccess) {
+        scope.launch {
+            // Stripe's webhook can take a little while to reach Supabase, especially
+            // after cancelling at period end. Keep checking for up to one minute.
+            repeat(40) {
+                delay(1_500)
+                when (val result = repository.refresh()) {
+                    is DataResult.Success -> {
+                        val access = result.data
+                        _state.value = _state.value.copy(access = access)
+                        val changed = access.status != baseline.status ||
+                            access.tier != baseline.tier ||
+                            access.cancelAtPeriodEnd != baseline.cancelAtPeriodEnd
+                        if (changed) {
+                            _state.value = _state.value.copy(watchingReturn = false)
+                            return@launch
+                        }
+                    }
+                    is DataResult.Failure -> Unit
+                }
+            }
+            _state.value = _state.value.copy(watchingReturn = false)
+        }
+    }
+}

@@ -1,21 +1,33 @@
 name: iosApp
 options:
-  bundleIdPrefix: com.codexpirit.flipledger
+  bundleIdPrefix: com.blackink.app
   deploymentTarget:
     iOS: "15.0"
   createIntermediateGroups: true
+packages:
+  # Firebase Analytics + Crashlytics via Swift Package Manager (no CocoaPods).
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk.git
+    from: "11.0.0"
 targets:
   iosApp:
     type: application
     platform: iOS
     sources:
       - path: iosApp
+    dependencies:
+      - package: Firebase
+        product: FirebaseAnalytics
+      - package: Firebase
+        product: FirebaseCrashlytics
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.codexpirit.flipledger
+        PRODUCT_BUNDLE_IDENTIFIER: com.blackink.app
         INFOPLIST_FILE: iosApp/Info.plist
         CODE_SIGN_ENTITLEMENTS: iosApp/iosApp.entitlements
         SWIFT_VERSION: "5.0"
+        # Generate dSYMs so Firebase Crashlytics can symbolicate crash stack traces.
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
         TARGETED_DEVICE_FAMILY: "1"
         SDKROOT: iphoneos
         SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
@@ -78,6 +90,15 @@ targets:
           export PATH="$JAVA_HOME/bin:$PATH"
           cd "$SRCROOT/.."
           ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode
+    postBuildScripts:
+      # Uploads dSYMs to Firebase Crashlytics so iOS crash reports are symbolicated.
+      - name: "Upload Crashlytics Symbols"
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - ${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}
+          - $(SRCROOT)/$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)
+        script: |
+          "${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run"
 schemes:
   iosApp:
     build:

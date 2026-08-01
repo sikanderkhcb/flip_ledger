@@ -11,9 +11,9 @@
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>FlipLedger</string>
+    <string>BlackInk</string>
     <key>CFBundleDisplayName</key>
-    <string>FlipLedger</string>
+    <string>BlackInk</string>
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
@@ -27,7 +27,7 @@
             <string>Editor</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>flipledger</string>
+                <string>blackink</string>
             </array>
         </dict>
     </array>

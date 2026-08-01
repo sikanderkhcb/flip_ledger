@@ -1,22 +1,22 @@
 const labels: Record<string, { title: string; message: string }> = {
   success: {
     title: "Subscription received",
-    message: "Return to FlipLedger and refresh your subscription status.",
+    message: "Return to BlackInk and refresh your subscription status.",
   },
   cancelled: {
     title: "Checkout cancelled",
-    message: "No charge was made. You can return to FlipLedger.",
+    message: "No charge was made. You can return to BlackInk.",
   },
   portal: {
     title: "Subscription updated",
-    message: "Return to FlipLedger to see your current plan.",
+    message: "Return to BlackInk to see your current plan.",
   },
 };
 
 Deno.serve((request) => {
   const result = new URL(request.url).searchParams.get("result") ?? "portal";
   const copy = labels[result] ?? labels.portal;
-  const appUrl = `flipledger://subscription?result=${encodeURIComponent(result)}`;
+  const appUrl = `blackink://subscription?result=${encodeURIComponent(result)}`;
 
   return new Response(
     `<!doctype html>
@@ -35,7 +35,7 @@ Deno.serve((request) => {
   <main>
     <h1>${copy.title}</h1>
     <p>${copy.message}</p>
-    <a href="${appUrl}">Return to FlipLedger</a>
+    <a href="${appUrl}">Return to BlackInk</a>
   </main>
   <script>window.setTimeout(() => { window.location.href = ${JSON.stringify(appUrl)}; }, 350);</script>
 </body>

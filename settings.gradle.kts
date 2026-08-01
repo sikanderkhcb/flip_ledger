@@ -1,4 +1,4 @@
-rootProject.name = "FlipLedger"
+rootProject.name = "BlackInk"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 

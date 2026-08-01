@@ -94,9 +94,14 @@ kotlin {
     }
 }
 
+// Pin the generated resources package so it stays stable regardless of rootProject.name.
+compose.resources {
+    packageOfResClass = "blackink.composeapp.generated.resources"
+}
+
 android {
-    namespace = "com.circuitflip.flipledger"
-    compileSdk = 34
+    namespace = "com.blackink.app"
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 24

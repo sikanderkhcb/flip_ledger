@@ -25,14 +25,20 @@ function subscriptionTier(
   }
 
   throw new Error(
-    `Subscription ${subscription.id} does not use a configured FlipLedger price`,
+    `Subscription ${subscription.id} does not use a configured BlackInk price`,
   );
+}
+
+export interface SyncedSubscription {
+  userId: string;
+  tier: "solo" | "partner";
+  status: Stripe.Subscription.Status;
 }
 
 export async function syncSubscription(
   admin: SupabaseClient,
   subscription: Stripe.Subscription,
-): Promise<void> {
+): Promise<SyncedSubscription> {
   const customerId = expandableId(subscription.customer);
   let userId = subscription.metadata.supabase_user_id;
 
@@ -47,7 +53,7 @@ export async function syncSubscription(
   }
 
   if (!userId) {
-    throw new Error(`No FlipLedger user mapping for subscription ${subscription.id}`);
+    throw new Error(`No BlackInk user mapping for subscription ${subscription.id}`);
   }
 
   const periodEnd = subscription.items.data
@@ -55,12 +61,14 @@ export async function syncSubscription(
     .filter((value): value is number => typeof value === "number")
     .sort((a, b) => b - a)[0];
 
+  const tier = subscriptionTier(subscription);
+
   const { error } = await admin.from("billing_accounts").upsert(
     {
       user_id: userId,
       stripe_customer_id: customerId,
       stripe_subscription_id: subscription.id,
-      plan_tier: subscriptionTier(subscription),
+      plan_tier: tier,
       subscription_status: subscription.status,
       current_period_end: periodEnd
         ? new Date(periodEnd * 1000).toISOString()
@@ -71,4 +79,6 @@ export async function syncSubscription(
     { onConflict: "user_id" },
   );
   if (error) throw error;
+
+  return { userId, tier, status: subscription.status };
 }

@@ -1,6 +1,6 @@
-# FlipLedger
+# BlackInk
 
-FlipLedger is a Kotlin Multiplatform resale ledger for Android and iOS. It tracks devices,
+BlackInk is a Kotlin Multiplatform resale ledger for Android and iOS. It tracks devices,
 additional costs, completed sales, profit, inventory aging, reports, and partner splits.
 
 ## Current architecture

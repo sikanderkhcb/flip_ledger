@@ -9,8 +9,8 @@ if (!supabaseUrl || !anonKey) {
 
 const stamp = Date.now();
 const account = {
-  email: `flipledger.qa.${stamp}@example.com`,
-  password: "FlipLedger-QA-2026!",
+  email: `blackink.qa.${stamp}@example.com`,
+  password: "BlackInk-QA-2026!",
 };
 
 async function request(path, { token = anonKey, body, method = "POST" } = {}) {
@@ -38,7 +38,7 @@ const signup = await request("/auth/v1/signup", {
     email: account.email,
     password: account.password,
     data: {
-      full_name: "FlipLedger QA",
+      full_name: "BlackInk QA",
       business_name: "QA Solo Subscription",
     },
   },
