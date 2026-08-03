@@ -107,4 +107,4 @@ schemes:
     run:
       config: Debug
     archive:
-      config: Debug
+      config: Release
