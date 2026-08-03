@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monochrome silhouette for Android 13+ themed icons. Only the alpha matters here — the
+     system replaces the fill with its own light/dark theme tint, so the diamond follows
+     the launcher theme automatically. Matches the enlarged foreground geometry. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M30,20 L78,20 L94.8,37.6 L54,88 L13.2,37.6 Z"
+        android:fillColor="#FFFFFF" />
+</vector>

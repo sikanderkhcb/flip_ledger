@@ -34,8 +34,8 @@ android {
         applicationId = "com.blackink.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     signingConfigs {
@@ -77,6 +77,9 @@ dependencies {
     implementation(projects.composeApp)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
+    // AndroidX SplashScreen: styles the Android 12+ system splash and holds it until the app
+    // resolves its start destination, so there is a single splash (no second in-app one).
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation(libs.koin.android)
 
     // Google Play In-App Review — native rating prompt behind the shared ReviewPrompter facade.

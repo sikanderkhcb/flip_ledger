@@ -19,7 +19,7 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
-            android:theme="@style/Theme.BlackInk">
+            android:theme="@style/Theme.BlackInk.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

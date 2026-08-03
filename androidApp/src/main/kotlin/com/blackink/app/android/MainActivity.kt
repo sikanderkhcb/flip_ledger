@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.blackink.app.App
 
 /** Single-activity host. All UI lives in the shared [App] composable. */
@@ -20,6 +21,11 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Theme the Android 12+ system splash (dark ink + white diamond) via Theme.BlackInk.Starting
+        // and let it hand off on the first frame to the branded in-app splash. Same brand mark on
+        // both, so the two read as one continuous splash.
+        installSplashScreen()
+
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
