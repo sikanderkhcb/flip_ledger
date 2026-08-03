@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Assessment
 import androidx.compose.material.icons.outlined.Handshake
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.SupportAgent
 import androidx.compose.material.icons.outlined.WorkspacePremium
 import androidx.compose.material3.AlertDialog
@@ -61,6 +62,7 @@ fun SettingsScreen(
     onOpenSettlement: () -> Unit,
     onOpenReports: () -> Unit,
     onOpenSubscription: () -> Unit,
+    onOpenSecurity: () -> Unit,
     onSignedOut: () -> Unit,
 ) {
     val vm = rememberViewModel<SettingsViewModel>()
@@ -147,6 +149,16 @@ fun SettingsScreen(
                             ),
                         )
                     }
+                }
+
+                SectionLabel("SECURITY")
+                FlipCard(padding = 0.dp) {
+                    SettingsRow(
+                        label = "Security",
+                        iconColor = colors.accentLilac,
+                        iconVector = Icons.Outlined.Lock,
+                        onClick = onOpenSecurity,
+                    )
                 }
 
                 SectionLabel("SUPPORT")

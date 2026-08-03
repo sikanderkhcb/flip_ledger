@@ -39,6 +39,11 @@ private class FakeAuthRepository(initial: SessionState) : AuthRepository {
 
     override suspend fun signIn(email: String, password: String) = DataResult.Success(Unit)
     override suspend fun signUp(draft: AuthDraft) = DataResult.Success(Unit)
+    override suspend fun verifySignupOtp(email: String, code: String) = DataResult.Success(Unit)
+    override suspend fun resendSignupOtp(email: String) = DataResult.Success(Unit)
+    override suspend fun sendPasswordReset(email: String) = DataResult.Success(Unit)
+    override suspend fun updatePassword(password: String) = DataResult.Success(Unit)
+    override suspend fun handlePasswordResetUrl(url: String) = DataResult.Success(Unit)
     override suspend fun signInWithApple(identityToken: String) = DataResult.Success(Unit)
     override suspend fun signInWithGoogle(identityToken: String) = DataResult.Success(Unit)
     override suspend fun signOut() = DataResult.Success(Unit)

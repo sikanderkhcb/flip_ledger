@@ -32,6 +32,15 @@ interface AuthRepository {
     /** Re-sends the sign-up OTP to [email]. */
     suspend fun resendSignupOtp(email: String): DataResult<Unit>
 
+    /** Sends a password-reset link to [email]. */
+    suspend fun sendPasswordReset(email: String): DataResult<Unit>
+
+    /** Changes the password for the currently authenticated session. */
+    suspend fun updatePassword(password: String): DataResult<Unit>
+
+    /** Imports the recovery session contained in a native deep link. */
+    suspend fun handlePasswordResetUrl(url: String): DataResult<Unit>
+
     suspend fun signInWithApple(identityToken: String): DataResult<Unit>
     suspend fun signInWithGoogle(identityToken: String): DataResult<Unit>
     suspend fun signOut(): DataResult<Unit>

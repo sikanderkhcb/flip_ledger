@@ -193,6 +193,11 @@ private class CountingAuthRepository : AuthRepository {
         signUpCalls += 1
         return DataResult.Success(Unit)
     }
+    override suspend fun verifySignupOtp(email: String, code: String) = DataResult.Success(Unit)
+    override suspend fun resendSignupOtp(email: String) = DataResult.Success(Unit)
+    override suspend fun sendPasswordReset(email: String) = DataResult.Success(Unit)
+    override suspend fun updatePassword(password: String) = DataResult.Success(Unit)
+    override suspend fun handlePasswordResetUrl(url: String) = DataResult.Success(Unit)
     override suspend fun signInWithApple(identityToken: String) = DataResult.Success(Unit)
     override suspend fun signInWithGoogle(identityToken: String) = DataResult.Success(Unit)
     override suspend fun signOut() = DataResult.Success(Unit)

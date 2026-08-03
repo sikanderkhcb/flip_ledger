@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.blackink.app.App
+import com.blackink.app.presentation.markPasswordResetRequested
 
 /** Single-activity host. All UI lives in the shared [App] composable. */
 class MainActivity : ComponentActivity() {
@@ -28,8 +29,21 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        handleAuthIntent(intent)
         requestNotificationPermissionIfNeeded()
         setContent { App() }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleAuthIntent(intent)
+    }
+
+    private fun handleAuthIntent(intent: android.content.Intent?) {
+        if (intent?.data?.scheme == "blackink" && intent.data?.host == "password-reset") {
+            markPasswordResetRequested(intent.data.toString())
+        }
     }
 
     /** Android 13+ requires a runtime grant to post notifications; ask once on launch. */
