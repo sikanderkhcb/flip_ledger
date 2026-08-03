@@ -14,6 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.blackink.app.domain.util.Money
 import com.blackink.app.presentation.AppViewModel
+import com.blackink.app.presentation.AuthRecovery
+import com.blackink.app.domain.repository.AuthRepository
 import com.blackink.app.presentation.StartDestination
 import com.blackink.app.presentation.WizardStore
 import com.blackink.app.core.ui.UiBanner
@@ -36,6 +38,7 @@ import com.blackink.app.presentation.screens.adddevice.AddDeviceViewModel
 import com.blackink.app.presentation.screens.adddevice.DeviceAddedScreen
 import com.blackink.app.presentation.screens.auth.AuthScreen
 import com.blackink.app.presentation.screens.auth.VerifyOtpScreen
+import com.blackink.app.presentation.screens.auth.ForgotPasswordScreen
 import com.blackink.app.presentation.screens.dashboard.DashboardScreen
 import com.blackink.app.presentation.screens.devicedetail.DeviceDetailScreen
 import com.blackink.app.presentation.screens.devicecare.DeviceCareScreen
@@ -49,6 +52,7 @@ import com.blackink.app.presentation.screens.sale.SaleViewModel
 import com.blackink.app.presentation.screens.invoice.InvoiceScreen
 import com.blackink.app.presentation.screens.saleshistory.SalesHistoryScreen
 import com.blackink.app.presentation.screens.settings.SettingsScreen
+import com.blackink.app.presentation.screens.settings.SecurityScreen
 import com.blackink.app.presentation.screens.settlement.SettlementScreen
 import com.blackink.app.presentation.screens.setup.Setup1Screen
 import com.blackink.app.presentation.screens.setup.Setup2Screen
@@ -100,6 +104,15 @@ private fun AppNavHost(start: StartDestination) {
     val addCostVm = rememberViewModel<AddCostViewModel>()
     val subscriptionVm = rememberViewModel<SubscriptionViewModel>()
     val subscriptionState by subscriptionVm.state.collectAsState()
+    val passwordResetUrl by AuthRecovery.requested.collectAsState()
+
+    LaunchedEffect(passwordResetUrl) {
+        passwordResetUrl?.let { url ->
+            AuthRecovery.consume()
+            koin.get<AuthRepository>().handlePasswordResetUrl(url)
+            if (navigator.current != Route.Security) navigator.push(Route.Security)
+        }
+    }
 
     val openAddDevice: () -> Unit = {
         subscriptionVm.requestAddDevice(
@@ -210,6 +223,7 @@ private fun AppNavHost(start: StartDestination) {
             // onboarded users → Dashboard, first-time users → Setup.
             onAuthenticated = {},
             onNeedsVerification = { email -> navigator.push(Route.VerifyOtp(email)) },
+            onForgotPassword = { navigator.push(Route.ForgotPassword) },
             onToggleMode = { signUp -> navigator.replace(Route.Auth(signUp = signUp)) },
         )
 
@@ -219,6 +233,8 @@ private fun AppNavHost(start: StartDestination) {
             // A verified OTP establishes the session; the onboarding-aware effect routes onward.
             onVerified = {},
         )
+
+        Route.ForgotPassword -> ForgotPasswordScreen(onBack = { navigator.back() })
 
         Route.Setup1 -> Setup1Screen(setupVm, onContinue = { navigator.push(Route.Setup2) }, onBack = { navigator.back() })
         Route.Setup2 -> Setup2Screen(
@@ -338,8 +354,11 @@ private fun AppNavHost(start: StartDestination) {
             onOpenSettlement = { navigator.push(Route.Settlement) },
             onOpenReports = { navigator.push(Route.Reports) },
             onOpenSubscription = { navigator.push(Route.Subscription) },
+            onOpenSecurity = { navigator.push(Route.Security) },
             onSignedOut = { navigator.resetTo(Route.Welcome) },
         )
+
+        Route.Security -> SecurityScreen(onBack = { navigator.back() })
           }
         }
       }

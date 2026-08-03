@@ -32,6 +32,14 @@
                     android:host="subscription"
                     android:scheme="blackink" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="password-reset"
+                    android:scheme="blackink" />
+            </intent-filter>
         </activity>
 
         <!-- Shares generated invoice PDFs from the app cache. -->

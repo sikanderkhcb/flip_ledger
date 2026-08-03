@@ -22,6 +22,7 @@ import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -42,6 +43,11 @@ class AuthRepositoryImpl(
     private val salesRepository: SalesRepository,
     private val subscriptionRepository: SubscriptionRepository,
 ) : AuthRepository {
+
+    private companion object {
+        // Register this exact URL in Supabase Auth > URL Configuration > Redirect URLs.
+        const val PASSWORD_RESET_REDIRECT = "blackink://password-reset"
+    }
 
     override val isAuthenticated: Flow<Boolean> =
         client.auth.sessionStatus.map { it is SessionStatus.Authenticated }
@@ -121,6 +127,45 @@ class AuthRepositoryImpl(
 
     override suspend fun resendSignupOtp(email: String): DataResult<Unit> = try {
         client.auth.resendEmail(type = OtpType.Email.SIGNUP, email = email.trim().lowercase())
+        DataResult.Success(Unit)
+    } catch (t: Throwable) {
+        DataResult.Failure(mapAuthError(t))
+    }
+
+    override suspend fun sendPasswordReset(email: String): DataResult<Unit> = try {
+        client.auth.resetPasswordForEmail(
+            email = email.trim().lowercase(),
+            redirectUrl = PASSWORD_RESET_REDIRECT,
+        )
+        DataResult.Success(Unit)
+    } catch (t: Throwable) {
+        DataResult.Failure(mapAuthError(t))
+    }
+
+    override suspend fun updatePassword(password: String): DataResult<Unit> = try {
+        client.auth.updateUser { this.password = password }
+        DataResult.Success(Unit)
+    } catch (t: Throwable) {
+        DataResult.Failure(mapAuthError(t))
+    }
+
+    override suspend fun handlePasswordResetUrl(url: String): DataResult<Unit> = try {
+        val fragment = url.substringAfter('#', missingDelimiterValue = "")
+        val values = fragment.split('&').mapNotNull { part ->
+            part.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] }
+        }.toMap()
+        val accessToken = values["access_token"] ?: error("Missing recovery access token")
+        val refreshToken = values["refresh_token"] ?: error("Missing recovery refresh token")
+        val expiresIn = values["expires_in"]?.toLongOrNull() ?: 3600L
+        client.auth.importSession(
+            UserSession(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+                expiresIn = expiresIn,
+                tokenType = values["token_type"] ?: "bearer",
+                user = null,
+            ),
+        )
         DataResult.Success(Unit)
     } catch (t: Throwable) {
         DataResult.Failure(mapAuthError(t))

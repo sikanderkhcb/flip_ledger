@@ -49,6 +49,7 @@ fun AuthScreen(
     onBack: () -> Unit,
     onAuthenticated: () -> Unit,
     onNeedsVerification: (String) -> Unit,
+    onForgotPassword: () -> Unit,
     onToggleMode: (Boolean) -> Unit,
 ) {
     val vm = rememberViewModel<AuthViewModel>(key = signUp)
@@ -111,6 +112,9 @@ fun AuthScreen(
                 isPassword = true,
                 error = state.fieldErrors["password"],
             )
+            if (!signUp) {
+                LinkButton("Forgot password?", onClick = onForgotPassword)
+            }
             UiErrorEffect(state.error)
             Spacer(Modifier.height(16.dp))
         }

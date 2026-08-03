@@ -8,6 +8,7 @@ import com.blackink.app.presentation.screens.addcost.AddCostViewModel
 import com.blackink.app.presentation.screens.adddevice.AddDeviceViewModel
 import com.blackink.app.presentation.screens.auth.AuthViewModel
 import com.blackink.app.presentation.screens.auth.VerifyOtpViewModel
+import com.blackink.app.presentation.screens.auth.ForgotPasswordViewModel
 import com.blackink.app.presentation.screens.dashboard.DashboardViewModel
 import com.blackink.app.presentation.screens.devicedetail.DeviceDetailViewModel
 import com.blackink.app.presentation.screens.devicecare.DeviceCareViewModel
@@ -17,6 +18,7 @@ import com.blackink.app.presentation.screens.reports.ReportsViewModel
 import com.blackink.app.presentation.screens.sale.SaleViewModel
 import com.blackink.app.presentation.screens.saleshistory.SalesHistoryViewModel
 import com.blackink.app.presentation.screens.settings.SettingsViewModel
+import com.blackink.app.presentation.screens.settings.SecurityViewModel
 import com.blackink.app.presentation.screens.settlement.SettlementViewModel
 import com.blackink.app.presentation.screens.setup.SetupViewModel
 import com.blackink.app.presentation.screens.subscription.SubscriptionViewModel
@@ -33,6 +35,7 @@ val presentationModule = module {
     factory { AppViewModel(get(), get(), get()) }
     factory { AuthViewModel(get()) }
     factory { VerifyOtpViewModel(get()) }
+    factory { ForgotPasswordViewModel(get()) }
     factory { SetupViewModel(get()) }
     factory { DashboardViewModel(get(), get(), get(), get(), get()) }
     factory { InventoryViewModel(get()) }
@@ -45,6 +48,7 @@ val presentationModule = module {
     factory { SettlementViewModel(get(), get(), get()) }
     factory { ReportsViewModel(get(), get(), get(), get()) }
     factory { SettingsViewModel(get(), get(), get()) }
+    factory { SecurityViewModel(get()) }
     factory { SubscriptionViewModel(get()) }
     factory { InvoiceViewModel(get()) }
 }

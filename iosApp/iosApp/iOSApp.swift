@@ -29,8 +29,12 @@ struct iOSApp: App {
                 .ignoresSafeArea(.all)
                 .onOpenURL { url in
                     // Stripe checkout return — dismiss the in-app browser and refresh.
-                    guard url.scheme == "blackink", url.host == "subscription" else { return }
-                    CheckoutBrowser_iosKt.dismissCheckoutBrowser()
+                    guard url.scheme == "blackink" else { return }
+                    if url.host == "subscription" {
+                        CheckoutBrowser_iosKt.dismissCheckoutBrowser()
+                    } else if url.host == "password-reset" {
+                        AuthRecoveryKt.markPasswordResetRequested(url: url.absoluteString)
+                    }
                 }
         }
     }

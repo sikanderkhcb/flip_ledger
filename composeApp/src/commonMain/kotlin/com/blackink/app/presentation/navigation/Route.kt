@@ -11,6 +11,7 @@ sealed interface Route {
     data object Welcome : Route             // 02
     data class Auth(val signUp: Boolean = false) : Route  // 03 / 03b
     data class VerifyOtp(val email: String) : Route       // 03c · email OTP verification
+    data object ForgotPassword : Route
     data object Setup1 : Route              // 04
     data object Setup2 : Route              // 05
     data object Setup3 : Route              // 06
@@ -34,4 +35,5 @@ sealed interface Route {
     data object Reports : Route             // 22
     data object Subscription : Route        // 23
     data object Settings : Route            // 24
+    data object Security : Route
 }
