@@ -28,14 +28,14 @@ val hasKeystore = keystorePropsFile.exists()
 
 android {
     namespace = "com.blackink.app.android"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.blackink.app"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        targetSdk = 36
+        versionCode = 3
+        versionName = "1.2"
     }
 
     signingConfigs {
